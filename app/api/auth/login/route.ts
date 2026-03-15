@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const { name, phone } = await request.json();
     const clientName = name || phone;
-    const salonId = process.env.DEFAULT_SALON_ID!;
+    const salonId = process.env.DEFAULT_SALON_ID || '00000000-0000-0000-0000-000000000001';
 
     const { data, error } = await supabase
       .from('clients')
