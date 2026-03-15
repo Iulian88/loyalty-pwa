@@ -1,8 +1,8 @@
 import jwt from 'jsonwebtoken';
 
 // In-memory storage for demo purposes
-let clients: Client[] = [];
-let visitLogs: VisitLog[] = [];
+export const clients: Client[] = [];
+export const visitLogs: VisitLog[] = [];
 
 export interface ClientSession {
   id: string;
