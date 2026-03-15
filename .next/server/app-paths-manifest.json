@@ -1,0 +1,7 @@
+{
+  "/dashboard/page": "app/dashboard/page.js",
+  "/show-qr/page": "app/show-qr/page.js",
+  "/operator/dashboard/page": "app/operator/dashboard/page.js",
+  "/operator/scan-qr/page": "app/operator/scan-qr/page.js",
+  "/login/page": "app/login/page.js"
+}
