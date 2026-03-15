@@ -3,7 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { clearOperatorSession, Client } from '@/lib/auth';
+import { clearOperatorSession } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
+import type { Client } from '@/types';
 import NavBar from '@/components/NavBar';
 
 export default function OperatorDashboardPage() {
@@ -29,14 +31,16 @@ export default function OperatorDashboardPage() {
     try {
       const salonId = '00000000-0000-0000-0000-000000000001';
 
-      // Import clients from auth
-      const { clients: allClients } = await import('@/lib/auth');
+      const { data: salonClients, error: clientsError } = await supabase
+        .from('clients')
+        .select('*')
+        .eq('salon_id', salonId);
 
-      // Filter clients by salon
-      const salonClients = allClients.filter(c => c.salon_id === salonId);
+      if (clientsError || !salonClients) {
+        throw new Error(clientsError?.message || 'Failed to load clients');
+      }
 
-      // Get recent clients (last 5)
-      const recent = salonClients
+      const recent = [...salonClients]
         .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
         .slice(0, 5);
 
@@ -46,12 +50,17 @@ export default function OperatorDashboardPage() {
       const total = salonClients.length;
       const rewarded = salonClients.filter(c => c.reward_claimed).length;
 
-      // Today visits (simplified - count all visit logs from today)
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const { visitLogs } = await import('@/lib/auth');
-      const todayVisits = visitLogs.filter(log =>
-        new Date(log.timestamp) >= today && log.action === 1
+
+      const { data: visitLogs, error: visitsError } = await supabase
+        .from('visits_log')
+        .select('*')
+        .gte('timestamp', today.toISOString())
+        .eq('action', 1);
+
+      const todayVisits = (visitLogs ?? []).filter(log =>
+        salonClients.some(c => c.id === log.client_id)
       ).length;
 
       setStats({

@@ -1,8 +1,8 @@
+import { supabase } from './supabase';
 import jwt from 'jsonwebtoken';
+import type { Client, VisitLog } from '../types';
 
-// In-memory storage for demo purposes
-export const clients: Client[] = [];
-export const visitLogs: VisitLog[] = [];
+export type { Client, VisitLog } from '../types';
 
 export interface ClientSession {
   id: string;
@@ -10,60 +10,67 @@ export interface ClientSession {
   phone: string;
 }
 
-export interface Client {
-  id: string;
-  salon_id: string;
-  name: string;
-  phone: string;
-  visits: number;
-  reward_claimed: boolean;
-  created_at: string;
-}
-
-export interface VisitLog {
-  id: string;
-  client_id: string;
-  operator_id: string;
-  action: number;
-  timestamp: string;
-}
-
 export async function registerClient(name: string, phone: string, salonId: string): Promise<Client> {
   // Check if phone already registered
-  const existing = clients.find(c => c.phone === phone && c.salon_id === salonId);
+  const { data: existing, error: checkError } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('phone', phone)
+    .eq('salon_id', salonId)
+    .single();
+
+  if (checkError && checkError.code !== 'PGRST116') {
+    throw new Error(checkError.message);
+  }
+
   if (existing) {
     throw new Error('Phone number already registered.');
   }
 
-  // Create new client
-  const client: Client = {
-    id: `client_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
-    salon_id: salonId,
-    name,
-    phone,
-    visits: 0,
-    reward_claimed: false,
-    created_at: new Date().toISOString(),
-  };
+  const { data, error: insertError } = await supabase
+    .from('clients')
+    .insert({ name, phone, salon_id: salonId, visits: 0, reward_claimed: false })
+    .select()
+    .single();
 
-  clients.push(client);
-  return client;
+  if (insertError) {
+    throw new Error(insertError.message);
+  }
+
+  return data as Client;
 }
 
 export async function loginClient(phone: string, salonId: string): Promise<Client> {
-  const client = clients.find(c => c.phone === phone && c.salon_id === salonId);
-  if (!client) {
-    throw new Error('Client not found. Please register first.');
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('phone', phone)
+    .eq('salon_id', salonId)
+    .single();
+
+  if (error && error.code !== 'PGRST116') {
+    throw new Error(error.message);
   }
-  return client;
+
+  if (!data) {
+    // Create a new client when not found
+    return registerClient(phone, phone, salonId);
+  }
+
+  return data as Client;
 }
 
 export async function getClientById(id: string): Promise<Client> {
-  const client = clients.find(c => c.id === id);
-  if (!client) {
+  const { data, error } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (error || !data) {
     throw new Error('Client not found.');
   }
-  return client;
+  return data as Client;
 }
 
 export function setSession(client: Client) {
