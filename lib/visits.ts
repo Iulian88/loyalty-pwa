@@ -24,8 +24,8 @@ export async function addVisit(clientId: string, operatorId: string): Promise<Cl
 
   await supabase.from('visits_log').insert({
     client_id: clientId,
-    operator_id: operatorId,
-    action: 1,
+    salon_id: client.salon_id,
+    points: 1
   });
 
   return updated as Client;
@@ -54,8 +54,8 @@ export async function removeVisit(clientId: string, operatorId: string): Promise
 
   await supabase.from('visits_log').insert({
     client_id: clientId,
-    operator_id: operatorId,
-    action: -1,
+    salon_id: client.salon_id,
+    points: -1
   });
 
   return updated as Client;
@@ -81,8 +81,8 @@ export async function resetVisits(clientId: string, operatorId: string): Promise
 
   await supabase.from('visits_log').insert({
     client_id: clientId,
-    operator_id: operatorId,
-    action: -VISIT_GOAL,
+    salon_id: client.salon_id,
+    points: -VISIT_GOAL
   });
 
   return updated as Client;

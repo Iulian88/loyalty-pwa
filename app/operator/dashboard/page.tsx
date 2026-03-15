@@ -56,8 +56,8 @@ export default function OperatorDashboardPage() {
       const { data: visitLogs, error: visitsError } = await supabase
         .from('visits_log')
         .select('*')
-        .gte('timestamp', today.toISOString())
-        .eq('action', 1);
+        .gte('created_at', today.toISOString())
+        .eq('points', 1);
 
       const todayVisits = (visitLogs ?? []).filter(log =>
         salonClients.some(c => c.id === log.client_id)
