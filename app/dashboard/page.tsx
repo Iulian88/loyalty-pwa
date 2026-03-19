@@ -165,7 +165,7 @@ export default function DashboardPage() {
                     <span className={`text-sm font-bold w-5 text-center flex-shrink-0 ${meta.color}`}>{meta.icon}</span>
                     <span className="flex-1 text-sm text-[var(--text-dim)]">{meta.label}</span>
                     <span className="text-xs text-[var(--muted)]">
-                      {new Date(log.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                      {new Date(log.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
                     </span>
                   </div>
                 );

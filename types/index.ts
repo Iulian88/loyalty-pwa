@@ -20,5 +20,5 @@ export interface VisitLog {
   client_id: string;
   operator_id: string;
   action: number;
-  timestamp: string;
+  created_at: string;
 }

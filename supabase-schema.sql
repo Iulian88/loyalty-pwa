@@ -41,11 +41,11 @@ CREATE TABLE IF NOT EXISTS visits_log (
   client_id    UUID NOT NULL REFERENCES clients(id) ON DELETE CASCADE,
   operator_id  TEXT NOT NULL,  -- Supabase auth user id or 'system'
   action       INT NOT NULL,   -- +1 (add), -1 (remove), -10 (reset)
-  timestamp    TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_visits_log_client_id ON visits_log(client_id);
-CREATE INDEX IF NOT EXISTS idx_visits_log_timestamp ON visits_log(timestamp);
+CREATE INDEX IF NOT EXISTS idx_visits_log_created_at ON visits_log(created_at);
 
 -- ─── Row Level Security ───────────────────────────────────────
 
