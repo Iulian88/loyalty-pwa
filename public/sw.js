@@ -9,8 +9,9 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = event.request.url;
   if (url.includes('/api/')) {
+    // Pass API requests straight to network — page fetch() already sets credentials:'include'
     event.respondWith(
-      fetch(event.request, { credentials: 'include' })
+      fetch(event.request)
         .catch(() => new Response(JSON.stringify({ error: 'Network error' }), {
           status: 503,
           headers: { 'Content-Type': 'application/json' },
