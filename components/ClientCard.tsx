@@ -32,11 +32,23 @@ export default function ClientCard({ client, onUpdate, operatorId }: ClientCardP
           action: action === 'add' ? 1 : -1
         }),
       });
-      if (!res.ok) {
-        const { error } = await res.json();
-        throw new Error(error);
+
+      const text = await res.text();
+      let data;
+
+      console.log('VISIT RESPONSE:', text);
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error('Invalid JSON response: ' + text);
       }
-      const { client: updated } = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Request failed');
+      }
+
+      const updated = data.client;
       onUpdate(updated);
       if (updated.visits >= VISIT_GOAL) setShowRewardModal(true);
     } catch (e: unknown) {
