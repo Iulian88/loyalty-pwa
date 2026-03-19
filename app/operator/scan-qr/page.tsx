@@ -26,7 +26,7 @@ export default function ScanQRPage() {
         if (data.error) {
           router.replace('/operator/login');
         } else {
-          setOperatorId(data.data.operatorId);
+          setOperatorId(data.operatorId || data?.data?.operatorId || "operator");
         }
       })
       .catch(() => router.replace('/operator/login'));
