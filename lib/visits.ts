@@ -3,19 +3,13 @@ import { VISIT_GOAL } from './supabase';
 import type { Client } from '../types';
 
 export async function addVisit(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
-  console.log('FETCH CLIENT BY ID:', clientId);
-
   const { data: client, error: fetchError } = await supabase
     .from('clients')
     .select('*')
     .eq('id', clientId)
     .single();
 
-  console.log('FETCH RESULT:', client);
-
   if (fetchError || !client) {
-    console.error('CLIENT FETCH ERROR:', fetchError);
-    console.error('Supabase addVisit fetch error:', fetchError);
     throw new Error('Client not found.');
   }
   if (client.visits >= VISIT_GOAL) throw new Error('Client already reached the visit goal.');
@@ -30,39 +24,24 @@ export async function addVisit(supabase: SupabaseClient, clientId: string, opera
     .single();
 
   if (updateError || !updated) {
-    console.error('Supabase addVisit update error:', updateError);
     throw new Error(updateError?.message || 'Update failed');
   }
 
-  const { error: logError } = await supabase
+  await supabase
     .from('visits_log')
-    .insert({
-      client_id: clientId,
-      operator_id: operatorId,
-      action: 1
-    });
-
-  if (logError) {
-    console.error('VISIT LOG ERROR:', logError);
-  }
+    .insert({ client_id: clientId, operator_id: operatorId, action: 1 });
 
   return updated as Client;
 }
 
 export async function removeVisit(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
-  console.log('FETCH CLIENT BY ID:', clientId);
-
   const { data: client, error: fetchError } = await supabase
     .from('clients')
     .select('*')
     .eq('id', clientId)
     .single();
 
-  console.log('FETCH RESULT:', client);
-
   if (fetchError || !client) {
-    console.error('CLIENT FETCH ERROR:', fetchError);
-    console.error('Supabase removeVisit fetch error:', fetchError);
     throw new Error('Client not found.');
   }
   if (client.visits <= 0) throw new Error('Visits cannot be negative.');
@@ -77,39 +56,24 @@ export async function removeVisit(supabase: SupabaseClient, clientId: string, op
     .single();
 
   if (updateError || !updated) {
-    console.error('Supabase removeVisit update error:', updateError);
     throw new Error(updateError?.message || 'Update failed');
   }
 
-  const { error: logError } = await supabase
+  await supabase
     .from('visits_log')
-    .insert({
-      client_id: clientId,
-      operator_id: operatorId,
-      action: -1
-    });
-
-  if (logError) {
-    console.error('VISIT LOG ERROR:', logError);
-  }
+    .insert({ client_id: clientId, operator_id: operatorId, action: -1 });
 
   return updated as Client;
 }
 
 export async function resetVisits(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
-  console.log('FETCH CLIENT BY ID:', clientId);
-
   const { data: client, error: fetchError } = await supabase
     .from('clients')
     .select('*')
     .eq('id', clientId)
     .single();
 
-  console.log('FETCH RESULT:', client);
-
   if (fetchError || !client) {
-    console.error('CLIENT FETCH ERROR:', fetchError);
-    console.error('Supabase resetVisits fetch error:', fetchError);
     throw new Error('Client not found.');
   }
 
@@ -124,11 +88,9 @@ export async function resetVisits(supabase: SupabaseClient, clientId: string, op
     throw new Error(updateError?.message || 'Update failed');
   }
 
-  const { error: logError } = await supabase
+  await supabase
     .from('visits_log')
     .insert({ client_id: clientId, operator_id: operatorId, action: 0 });
-
-  if (logError) console.error('VISIT LOG ERROR:', logError);
 
   return updated as Client;
 }
@@ -152,11 +114,9 @@ export async function claimReward(supabase: SupabaseClient, clientId: string, op
 
   if (updateError || !updated) throw new Error(updateError?.message || 'Claim failed');
 
-  const { error: logError } = await supabase
+  await supabase
     .from('visits_log')
     .insert({ client_id: clientId, operator_id: operatorId, action: 2 });
-
-  if (logError) console.error('Claim reward log error:', logError);
 
   return updated as Client;
 }

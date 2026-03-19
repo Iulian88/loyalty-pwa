@@ -56,7 +56,7 @@ export default function OperatorDashboardPage() {
       const { data: visitLogs, error: visitsError } = await supabase
         .from('visits_log')
         .select('*')
-        .gte('created_at', today.toISOString())
+        .gte('timestamp', today.toISOString())
         .eq('action', 1);
 
       if (visitsError) {

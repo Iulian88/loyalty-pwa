@@ -16,18 +16,15 @@ export default function OperatorLoginPage() {
     setError('');
 
     try {
-      // Simple password check
-      const correctPassword = process.env.OPERATOR_PASSWORD || 'admin123';
-      if (password !== correctPassword) {
-        throw new Error('Invalid password.');
-      }
-
-      // Set session
-      await fetch('/api/operator/login', {
+      const res = await fetch('/api/operator/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),
       });
+      const data = await res.json();
+      if (!res.ok || data.error) {
+        throw new Error(data.error || 'Invalid password.');
+      }
       router.push('/operator/dashboard');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Login failed.');
