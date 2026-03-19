@@ -15,7 +15,7 @@ export default function OperatorDashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/operator/session')
+    fetch('/api/operator/session', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data.error) {

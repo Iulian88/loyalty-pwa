@@ -17,7 +17,7 @@ function SearchClientContent() {
   const [operatorId, setOperatorId] = useState<string>('');
 
   useEffect(() => {
-    fetch('/api/operator/session')
+    fetch('/api/operator/session', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data.error) {

@@ -10,8 +10,8 @@ export async function POST(request: NextRequest) {
   const response = NextResponse.json({ success: true });
   response.cookies.set('operator_session', 'true', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    secure: true,
+    sameSite: 'lax',
     maxAge: 60 * 60 * 24, // 1 day
   });
   return response;

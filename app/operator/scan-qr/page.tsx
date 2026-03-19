@@ -20,7 +20,7 @@ export default function ScanQRPage() {
   const [processingScan, setProcessingScan] = useState(false);
 
   useEffect(() => {
-    fetch('/api/operator/session')
+    fetch('/api/operator/session', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data.error) {
