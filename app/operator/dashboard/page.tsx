@@ -57,7 +57,11 @@ export default function OperatorDashboardPage() {
         .from('visits_log')
         .select('*')
         .gte('created_at', today.toISOString())
-        .eq('points', 1);
+        .eq('action', 1);
+
+      if (visitsError) {
+        throw new Error(visitsError.message);
+      }
 
       const todayVisits = (visitLogs ?? []).filter(log =>
         salonClients.some(c => c.id === log.client_id)
