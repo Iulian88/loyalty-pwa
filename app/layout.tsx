@@ -7,7 +7,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'black',
     title: 'Salon Loyalty',
   },
   icons: {
@@ -21,10 +21,11 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  colorScheme: 'dark',
   themeColor: '#0a0a0a',
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
       <head>
@@ -32,7 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black" />
       </head>
       <body>
         {children}
