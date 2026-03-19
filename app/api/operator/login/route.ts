@@ -7,7 +7,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Invalid password' }, { status: 401 });
   }
   // For simplicity, set a session cookie for operator
-  const response = NextResponse.json({ success: true });
+  const response = NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } });
   response.cookies.set('operator_session', 'true', {
     httpOnly: true,
     secure: true,

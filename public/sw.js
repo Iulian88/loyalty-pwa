@@ -7,8 +7,15 @@ self.addEventListener('activate', (event) => {
 });
 
 self.addEventListener('fetch', (event) => {
-  if (event.request.url.includes('/api/')) {
-    event.respondWith(fetch(event.request));
+  const url = event.request.url;
+  if (url.includes('/api/')) {
+    event.respondWith(
+      fetch(event.request, { credentials: 'include' })
+        .catch(() => new Response(JSON.stringify({ error: 'Network error' }), {
+          status: 503,
+          headers: { 'Content-Type': 'application/json' },
+        }))
+    );
     return;
   }
 
