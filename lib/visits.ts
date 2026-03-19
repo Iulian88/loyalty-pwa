@@ -2,13 +2,18 @@ import { supabase, VISIT_GOAL } from './supabase';
 import type { Client } from '../types';
 
 export async function addVisit(clientId: string, operatorId: string): Promise<Client> {
+  console.log('FETCH CLIENT BY ID:', clientId);
+
   const { data: client, error: fetchError } = await supabase
     .from('clients')
     .select('*')
     .eq('id', clientId)
     .single();
 
+  console.log('FETCH RESULT:', client);
+
   if (fetchError || !client) {
+    console.error('CLIENT FETCH ERROR:', fetchError);
     console.error('Supabase addVisit fetch error:', fetchError);
     throw new Error('Client not found.');
   }
@@ -43,13 +48,18 @@ export async function addVisit(clientId: string, operatorId: string): Promise<Cl
 }
 
 export async function removeVisit(clientId: string, operatorId: string): Promise<Client> {
+  console.log('FETCH CLIENT BY ID:', clientId);
+
   const { data: client, error: fetchError } = await supabase
     .from('clients')
     .select('*')
     .eq('id', clientId)
     .single();
 
+  console.log('FETCH RESULT:', client);
+
   if (fetchError || !client) {
+    console.error('CLIENT FETCH ERROR:', fetchError);
     console.error('Supabase removeVisit fetch error:', fetchError);
     throw new Error('Client not found.');
   }
@@ -84,13 +94,18 @@ export async function removeVisit(clientId: string, operatorId: string): Promise
 }
 
 export async function resetVisits(clientId: string, operatorId: string): Promise<Client> {
+  console.log('FETCH CLIENT BY ID:', clientId);
+
   const { data: client, error: fetchError } = await supabase
     .from('clients')
     .select('*')
     .eq('id', clientId)
     .single();
 
+  console.log('FETCH RESULT:', client);
+
   if (fetchError || !client) {
+    console.error('CLIENT FETCH ERROR:', fetchError);
     console.error('Supabase resetVisits fetch error:', fetchError);
     throw new Error('Client not found.');
   }
