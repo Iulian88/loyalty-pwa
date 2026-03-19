@@ -3,6 +3,7 @@ import { addVisit, removeVisit, resetVisits } from '@/lib/visits';
 
 export async function POST(req: NextRequest) {
   try {
+    console.log('API SUPABASE URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
     const { clientId, operatorId, action } = await req.json();
     console.log('POST /api/visits body:', { clientId, operatorId, action });
 
