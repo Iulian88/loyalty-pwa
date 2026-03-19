@@ -5,5 +5,8 @@ export async function GET(request: NextRequest) {
   if (session !== 'true') {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
-  return NextResponse.json({ success: true });
+  return NextResponse.json({
+    success: true,
+    operatorId: "operator"
+  });
 }
