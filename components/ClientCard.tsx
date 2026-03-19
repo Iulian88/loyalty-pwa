@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Client } from '@/lib/supabase';
 
 interface ClientCardProps {
@@ -10,57 +10,42 @@ interface ClientCardProps {
 }
 
 export default function ClientCard({ client, onUpdate, operatorId }: Readonly<ClientCardProps>) {
-  const [loading, setLoading] = useState<'add' | 'remove' | 'reset' | null>(null);
+  const [loading, setLoading] = useState<'add' | 'remove' | 'reset' | 'claim' | null>(null);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState('');
   const [showRewardModal, setShowRewardModal] = useState(false);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const VISIT_GOAL = 10;
   const isComplete = client.visits >= VISIT_GOAL;
   const progress = Math.min((client.visits / VISIT_GOAL) * 100, 100);
 
-  const handleAction = async (action: 'add' | 'remove') => {
-    setLoading(action);
+  const showToast = (message: string) => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToast(message);
+    toastTimer.current = setTimeout(() => setToast(''), 3000);
+  };
+
+  const postAction = async (action: number) => {
+    const safeOperatorId = operatorId || 'operator';
+    const res = await fetch('/api/visits', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ clientId: client.id, operatorId: safeOperatorId, action }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data?.error || 'Request failed');
+    return data.client as Client;
+  };
+
+  const handleAdd = async () => {
+    if (loading) return;
+    setLoading('add');
     setError('');
     try {
-      const safeOperatorId = operatorId || 'operator';
-      console.log('UI SENDING:', {
-        clientId: client.id,
-        operatorId: safeOperatorId,
-        action
-      });
-
-      const res = await fetch('/api/visits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: client.id,
-          operatorId: safeOperatorId,
-          action: action === 'add' ? 1 : -1
-        }),
-      });
-
-      console.log('UI STATUS:', res.status);
-
-      const text = await res.text();
-      console.log('UI RESPONSE:', text);
-
-      let data;
-
-      try {
-        data = JSON.parse(text);
-      } catch (e) {
-        console.error('JSON PARSE ERROR:', e);
-        throw new Error('Invalid server response');
-      }
-
-      console.log('PARSED:', data);
-
-      if (!res.ok) {
-        throw new Error(data?.error || 'Request failed');
-      }
-
-      const updated = data.client;
+      const updated = await postAction(1);
       onUpdate(updated);
+      showToast(`✓ Visit added — ${updated.visits}/${VISIT_GOAL}`);
       if (updated.visits >= VISIT_GOAL) setShowRewardModal(true);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error');
@@ -69,37 +54,14 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
     }
   };
 
-  const handleReset = async () => {
-    setLoading('reset');
+  const handleRemove = async () => {
+    if (loading) return;
+    setLoading('remove');
     setError('');
     try {
-      const safeOperatorId = operatorId || 'operator';
-      const res = await fetch('/api/visits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          clientId: client.id,
-          operatorId: safeOperatorId,
-          action: 0
-        }),
-      });
-
-      const text = await res.text();
-      let data;
-
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error('Invalid server response');
-      }
-
-      if (!res.ok) {
-        throw new Error(data?.error || 'Request failed');
-      }
-
-      const updated = data.client;
+      const updated = await postAction(-1);
       onUpdate(updated);
-      setShowRewardModal(false);
+      showToast(`Visit removed — ${updated.visits}/${VISIT_GOAL}`);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Error');
     } finally {
@@ -107,36 +69,77 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
     }
   };
 
+  const handleReset = async () => {
+    if (loading) return;
+    setLoading('reset');
+    setError('');
+    try {
+      const updated = await postAction(0);
+      onUpdate(updated);
+      showToast('Card reset to 0');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const handleClaim = async () => {
+    if (loading) return;
+    setLoading('claim');
+    setError('');
+    try {
+      const updated = await postAction(2);
+      onUpdate(updated);
+      setShowRewardModal(false);
+      showToast(`🎉 Reward claimed for ${client.name}!`);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Error');
+    } finally {
+      setLoading(null);
+    }
+  };
+
+  const formatDate = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
   return (
     <>
+      {/* Toast */}
+      {toast && (
+        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1a1a] border border-[var(--gold-dim)]/40 rounded-2xl px-5 py-3 shadow-2xl fade-up pointer-events-none">
+          <p className="text-sm font-semibold text-[var(--gold)] whitespace-nowrap">{toast}</p>
+        </div>
+      )}
+
       <div className={`glass-card rounded-2xl p-6 w-full ${isComplete ? 'reward-glow' : ''}`}>
         {/* Client info */}
         <div className="flex items-center gap-4 mb-6">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)] flex items-center justify-center text-[var(--dark)] font-display font-bold text-lg">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)] flex items-center justify-center text-[var(--dark)] font-display font-bold text-lg flex-shrink-0">
             {client.name.charAt(0).toUpperCase()}
           </div>
-          <div className="flex-1">
-            <h3 className="font-display text-xl font-semibold text-[var(--text)]">{client.name}</h3>
+          <div className="flex-1 min-w-0">
+            <h3 className="font-display text-xl font-semibold text-[var(--text)] truncate">{client.name}</h3>
             <p className="text-sm text-[var(--muted)]">{client.phone}</p>
           </div>
-          <div className="text-right">
+          <div className="text-right flex-shrink-0">
             <p className="text-3xl font-display font-bold text-gold-shimmer">{client.visits}</p>
-            <p className="text-xs text-[var(--muted)]">/ {VISIT_GOAL} visits</p>
+            <p className="text-xs text-[var(--muted)]">/ {VISIT_GOAL}</p>
           </div>
         </div>
 
         {/* Mini stamp grid */}
         <div className="grid grid-cols-10 gap-1.5 mb-4">
-          {Array.from({ length: VISIT_GOAL }, (_, stampNumber) => stampNumber + 1).map((stampNumber) => (
+          {Array.from({ length: VISIT_GOAL }, (_, i) => i + 1).map((n) => (
             <div
-              key={stampNumber}
-              className={`aspect-square rounded-md flex items-center justify-center transition-all duration-200
-                ${stampNumber <= client.visits
-                  ? 'bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)]'
+              key={n}
+              className={`aspect-square rounded-md flex items-center justify-center transition-all duration-300
+                ${n <= client.visits
+                  ? 'bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)] scale-105'
                   : 'bg-[#1e1e1e] border border-[var(--border)]'
                 }`}
             >
-              {stampNumber <= client.visits && (
+              {n <= client.visits && (
                 <svg viewBox="0 0 24 24" className="w-3 h-3 text-[var(--dark)]" fill="currentColor">
                   <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                 </svg>
@@ -147,13 +150,37 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
 
         {/* Progress bar */}
         <div className="h-1.5 bg-[#1e1e1e] rounded-full overflow-hidden mb-5">
-          <div className="progress-bar h-full rounded-full" style={{ width: `${progress}%` }} />
+          <div className="progress-bar h-full rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
         </div>
 
-        {/* Status badge */}
+        {/* State: Reward available — operator must confirm claim */}
         {isComplete && (
-          <div className="bg-[var(--gold-dim)]/10 border border-[var(--gold-dim)]/30 rounded-xl p-3 mb-4 text-center">
-            <p className="text-sm font-semibold text-[var(--gold)]">🎉 Reward unlocked! Free haircut ready.</p>
+          <div className="bg-[var(--gold-dim)]/10 border border-[var(--gold-dim)]/30 rounded-xl p-4 mb-4">
+            <p className="text-sm font-semibold text-[var(--gold)] text-center mb-3">🎉 Reward unlocked — confirm with client</p>
+            <button
+              onClick={handleClaim}
+              disabled={loading !== null}
+              className="btn-gold w-full py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading === 'claim' ? (
+                <div className="w-4 h-4 border-2 border-[var(--dark)] border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>
+                  <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                  Confirm Reward Claim
+                </>
+              )}
+            </button>
+          </div>
+        )}
+
+        {/* State: Collecting again after previous reward */}
+        {!isComplete && client.claimed_at && (
+          <div className="flex items-center gap-2 mb-4 px-1">
+            <svg viewBox="0 0 24 24" className="w-3.5 h-3.5 text-[var(--muted)] flex-shrink-0" fill="currentColor">
+              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+            </svg>
+            <p className="text-xs text-[var(--muted)]">Last reward claimed: {formatDate(client.claimed_at)}</p>
           </div>
         )}
 
@@ -166,7 +193,7 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
         {/* Action buttons */}
         <div className="flex gap-3">
           <button
-            onClick={() => handleAction('remove')}
+            onClick={handleRemove}
             disabled={loading !== null || client.visits <= 0}
             className="btn-ghost flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
           >
@@ -175,13 +202,13 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
             ) : (
               <>
                 <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M19 13H5v-2h14v2z"/></svg>
-                Remove Visit
+                Remove
               </>
             )}
           </button>
 
           <button
-            onClick={() => handleAction('add')}
+            onClick={handleAdd}
             disabled={loading !== null || client.visits >= VISIT_GOAL}
             className="btn-gold flex-1 py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-30 disabled:cursor-not-allowed"
           >
@@ -196,44 +223,50 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
           </button>
         </div>
 
-        {isComplete && (
+        {/* Reset — operator correction tool, shown only when there are visits */}
+        {client.visits > 0 && !isComplete && (
           <button
             onClick={handleReset}
             disabled={loading !== null}
-            className="w-full mt-3 py-3 rounded-xl text-sm font-semibold border border-[var(--gold-dim)]/40 text-[var(--gold)] hover:bg-[var(--gold-dim)]/10 transition-colors flex items-center justify-center gap-2 disabled:opacity-30"
+            className="w-full mt-3 py-2.5 rounded-xl text-xs text-[var(--muted)] hover:text-[var(--text-dim)] border border-[var(--border)] hover:border-[var(--border)]/60 transition-colors flex items-center justify-center gap-2 disabled:opacity-30"
           >
             {loading === 'reset' ? (
-              <div className="w-4 h-4 border-2 border-[var(--gold)] border-t-transparent rounded-full animate-spin" />
+              <div className="w-3.5 h-3.5 border-2 border-[var(--muted)] border-t-transparent rounded-full animate-spin" />
             ) : (
               <>
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-                Redeem Reward & Reset
+                <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                Reset Counter
               </>
             )}
           </button>
         )}
       </div>
 
-      {/* Reward Modal */}
+      {/* Reward confirmation modal */}
       {showRewardModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
           <div className="glass-card reward-glow rounded-3xl p-8 max-w-sm w-full text-center fade-up">
             <div className="text-5xl mb-4">🎉</div>
             <h2 className="font-display text-2xl font-bold text-[var(--gold)] mb-2">Reward Unlocked!</h2>
-            <p className="text-[var(--text-dim)] mb-6">{client.name} has reached {VISIT_GOAL} visits and earned a <strong className="text-[var(--text)]">free haircut</strong>!</p>
+            <p className="text-[var(--text-dim)] mb-6">
+              {client.name} reached {VISIT_GOAL} visits and earned a{' '}
+              <strong className="text-[var(--text)]">free haircut</strong>!
+            </p>
             <div className="flex flex-col gap-3">
               <button
-                onClick={handleReset}
+                onClick={handleClaim}
                 disabled={loading !== null}
-                className="btn-gold py-3 rounded-xl text-sm font-semibold"
+                className="btn-gold py-3 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                Redeem & Reset Counter
+                {loading === 'claim' ? (
+                  <div className="w-4 h-4 border-2 border-[var(--dark)] border-t-transparent rounded-full animate-spin" />
+                ) : 'Confirm Claim & Reset Counter'}
               </button>
               <button
                 onClick={() => setShowRewardModal(false)}
                 className="btn-ghost py-3 rounded-xl text-sm"
               >
-                Redeem Later
+                Claim Later
               </button>
             </div>
           </div>

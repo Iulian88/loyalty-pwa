@@ -5,6 +5,7 @@ export interface Client {
   phone: string;
   visits: number;
   reward_claimed: boolean;
+  claimed_at: string | null;
   created_at: string;
 }
 

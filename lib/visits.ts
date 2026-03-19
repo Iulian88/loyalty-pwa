@@ -115,27 +115,48 @@ export async function resetVisits(supabase: SupabaseClient, clientId: string, op
 
   const { data: updated, error: updateError } = await supabase
     .from('clients')
-    .update({ visits: 0, reward_claimed: true })
+    .update({ visits: 0 })
     .eq('id', clientId)
     .select()
     .single();
 
   if (updateError || !updated) {
-    console.error('Supabase resetVisits update error:', updateError);
     throw new Error(updateError?.message || 'Update failed');
   }
 
   const { error: logError } = await supabase
     .from('visits_log')
-    .insert({
-      client_id: clientId,
-      operator_id: operatorId,
-      action: -10
-    });
+    .insert({ client_id: clientId, operator_id: operatorId, action: 0 });
 
-  if (logError) {
-    console.error('VISIT LOG ERROR:', logError);
-  }
+  if (logError) console.error('VISIT LOG ERROR:', logError);
+
+  return updated as Client;
+}
+
+export async function claimReward(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
+  const { data: client, error: fetchError } = await supabase
+    .from('clients')
+    .select('*')
+    .eq('id', clientId)
+    .single();
+
+  if (fetchError || !client) throw new Error('Client not found.');
+  if (client.visits < VISIT_GOAL) throw new Error('Client has not reached the visit goal yet.');
+
+  const { data: updated, error: updateError } = await supabase
+    .from('clients')
+    .update({ visits: 0, reward_claimed: true, claimed_at: new Date().toISOString() })
+    .eq('id', clientId)
+    .select()
+    .single();
+
+  if (updateError || !updated) throw new Error(updateError?.message || 'Claim failed');
+
+  const { error: logError } = await supabase
+    .from('visits_log')
+    .insert({ client_id: clientId, operator_id: operatorId, action: 2 });
+
+  if (logError) console.error('Claim reward log error:', logError);
 
   return updated as Client;
 }

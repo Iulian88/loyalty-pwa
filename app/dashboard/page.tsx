@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Client } from '@/lib/auth';
+import { VisitLog } from '@/types';
 import LoyaltyCard from '@/components/LoyaltyCard';
 import NavBar from '@/components/NavBar';
 import InstallPrompt from '@/components/InstallPrompt';
@@ -12,6 +13,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
+  const [visitHistory, setVisitHistory] = useState<VisitLog[]>([]);
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -26,6 +28,14 @@ export default function DashboardPage() {
       .catch(() => router.replace('/login'))
       .finally(() => setLoading(false));
   }, [router]);
+
+  useEffect(() => {
+    if (!client) return;
+    fetch(`/api/visits/${client.id}`)
+      .then(res => res.json())
+      .then(data => { if (data.history) setVisitHistory(data.history); })
+      .catch(() => {});
+  }, [client]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -136,6 +146,33 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        {/* Recent Activity */}
+        {visitHistory.length > 0 && (
+          <div className="glass-card rounded-2xl p-5 fade-up delay-500">
+            <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-4">Recent Activity</h3>
+            <div className="space-y-1">
+              {visitHistory.map(log => {
+                const metaMap: Record<number, { icon: string; label: string; color: string }> = {
+                  1:  { icon: '✓', label: 'Visit recorded',  color: 'text-[var(--gold)]' },
+                  2:  { icon: '🎁', label: 'Reward claimed',  color: 'text-emerald-400' },
+                  [-1]: { icon: '−', label: 'Visit removed',   color: 'text-red-400' },
+                  0:  { icon: '↺', label: 'Card reset',       color: 'text-[var(--muted)]' },
+                };
+                const meta = metaMap[log.action] ?? { icon: '·', label: 'Activity', color: 'text-[var(--muted)]' };
+                return (
+                  <div key={log.id} className="flex items-center gap-3 py-2 border-b border-[var(--border)] last:border-0">
+                    <span className={`text-sm font-bold w-5 text-center flex-shrink-0 ${meta.color}`}>{meta.icon}</span>
+                    <span className="flex-1 text-sm text-[var(--text-dim)]">{meta.label}</span>
+                    <span className="text-xs text-[var(--muted)]">
+                      {new Date(log.timestamp).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
 
       <NavBar role="client" />

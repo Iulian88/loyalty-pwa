@@ -42,11 +42,11 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen flex flex-col p-6 relative overflow-hidden">
-      <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-yellow-500/4 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-[var(--gold-dim)]/4 blur-3xl pointer-events-none" />
 
       <Link
         href="/"
-        className="flex items-center gap-2 text-gray-500 hover:text-gray-700 transition-colors mb-10 w-fit"
+        className="flex items-center gap-2 text-[var(--muted)] hover:text-[var(--text)] transition-colors mb-10 w-fit"
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
@@ -55,11 +55,14 @@ export default function LoginPage() {
       </Link>
 
       <div className="flex-1 flex flex-col justify-center max-w-xs mx-auto w-full">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">Welcome Back</h1>
+        <div className="mb-8 fade-up">
+          <h1 className="font-display text-3xl font-bold text-[var(--text)]">Welcome Back</h1>
+          <p className="text-[var(--muted)] text-sm mt-1">Sign in with your phone number</p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 fade-up delay-100">
           <div>
-            <label htmlFor="phone" className="block text-sm font-medium text-gray-900 mb-2">
+            <label htmlFor="phone" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
               Phone Number
             </label>
             <input
@@ -67,31 +70,31 @@ export default function LoginPage() {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 bg-white text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-yellow-500"
+              className="input-field w-full px-4 py-3 rounded-xl text-base"
               placeholder="Enter your phone number"
               required
             />
           </div>
 
           {error && (
-            <div className="p-3 rounded-lg bg-red-50 border border-red-200 text-red-600 text-sm">
-              {error}
+            <div className="bg-red-900/20 border border-red-900/40 rounded-xl p-3">
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3 px-4 bg-yellow-500 text-black font-semibold rounded-lg hover:bg-yellow-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="btn-gold w-full py-4 rounded-2xl text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Logging in...' : 'Login'}
+            {loading ? 'Signing in…' : 'Sign In'}
           </button>
         </form>
 
-        <p className="mt-8 text-gray-500 text-center">
-          Don't have an account?{' '}
-          <Link href="/register" className="text-yellow-600 hover:underline">
-            Register here
+        <p className="mt-8 pt-6 border-t border-[var(--border)] text-[var(--muted)] text-center text-sm fade-up delay-200">
+          New here?{' '}
+          <Link href="/register" className="text-[var(--gold-dim)] hover:text-[var(--gold)] transition-colors">
+            Create account
           </Link>
         </p>
       </div>

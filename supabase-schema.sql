@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS clients (
   phone           TEXT NOT NULL,
   visits          INT NOT NULL DEFAULT 0 CHECK (visits >= 0 AND visits <= 10),
   reward_claimed  BOOLEAN NOT NULL DEFAULT false,
+  claimed_at      TIMESTAMPTZ DEFAULT NULL,
   created_at      TIMESTAMPTZ NOT NULL DEFAULT now(),
   UNIQUE (phone, salon_id)
 );
