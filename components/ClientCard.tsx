@@ -23,6 +23,12 @@ export default function ClientCard({ client, onUpdate, operatorId }: ClientCardP
     setLoading(action);
     setError('');
     try {
+      console.log('SENDING:', {
+        clientId: client.id,
+        operatorId,
+        action: action === 'add' ? 1 : -1
+      });
+
       const res = await fetch('/api/visits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -33,16 +39,21 @@ export default function ClientCard({ client, onUpdate, operatorId }: ClientCardP
         }),
       });
 
-      const text = await res.text();
-      let data;
+      console.log('STATUS:', res.status);
 
-      console.log('VISIT RESPONSE:', text);
+      const text = await res.text();
+      console.log('RAW RESPONSE:', text);
+
+      let data;
 
       try {
         data = JSON.parse(text);
-      } catch {
-        throw new Error('Invalid JSON response: ' + text);
+      } catch (e) {
+        console.error('JSON PARSE ERROR:', e);
+        throw new Error('Invalid server response');
       }
+
+      console.log('PARSED:', data);
 
       if (!res.ok) {
         throw new Error(data?.error || 'Request failed');
