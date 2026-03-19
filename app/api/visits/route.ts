@@ -26,17 +26,23 @@ export async function POST(req: NextRequest) {
       .single();
     console.log('RESULT:', existingClient, fetchError);
 
-    if (fetchError || !existingClient) {
-      return NextResponse.json({ error: 'Client not found.' }, { status: 400 });
+    if (fetchError) {
+      console.error('SUPABASE ERROR:', fetchError);
+      return NextResponse.json({ error: 'Supabase error', details: fetchError }, { status: 500 });
+    }
+
+    if (!existingClient) {
+      console.error('CLIENT NOT FOUND:', clientId);
+      return NextResponse.json({ error: 'Client not found', clientId }, { status: 404 });
     }
 
     let updatedClient;
     if (action === 1) {
-      updatedClient = await addVisit(clientId, operatorId);
+      updatedClient = await addVisit(supabase, clientId, operatorId);
     } else if (action === -1) {
-      updatedClient = await removeVisit(clientId, operatorId);
+      updatedClient = await removeVisit(supabase, clientId, operatorId);
     } else if (action === 0) {
-      updatedClient = await resetVisits(clientId, operatorId);
+      updatedClient = await resetVisits(supabase, clientId, operatorId);
     } else {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }

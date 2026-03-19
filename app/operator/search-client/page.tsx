@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { searchClientByPhone } from '@/lib/visits';
 import { Client } from '@/lib/supabase';
 import ClientCard from '@/components/ClientCard';
 import NavBar from '@/components/NavBar';
@@ -45,7 +44,20 @@ function SearchClientContent() {
 
     try {
       const salonId = '00000000-0000-0000-0000-000000000001';
-      const result = await searchClientByPhone(q, salonId);
+      const response = await fetch(`/api/operator?phone=${encodeURIComponent(q)}&salon_id=${encodeURIComponent(salonId)}`);
+
+      if (response.status === 404) {
+        setClient(null);
+        setError('No client found with this phone number.');
+        return;
+      }
+
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        throw new Error(payload?.error || 'Search failed.');
+      }
+
+      const result = await response.json();
       setClient(result);
       if (!result) setError('No client found with this phone number.');
     } catch (e: unknown) {

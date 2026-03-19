@@ -1,7 +1,8 @@
-import { supabase, VISIT_GOAL } from './supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import { VISIT_GOAL } from './supabase';
 import type { Client } from '../types';
 
-export async function addVisit(clientId: string, operatorId: string): Promise<Client> {
+export async function addVisit(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
   console.log('FETCH CLIENT BY ID:', clientId);
 
   const { data: client, error: fetchError } = await supabase
@@ -48,7 +49,7 @@ export async function addVisit(clientId: string, operatorId: string): Promise<Cl
   return updated as Client;
 }
 
-export async function removeVisit(clientId: string, operatorId: string): Promise<Client> {
+export async function removeVisit(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
   console.log('FETCH CLIENT BY ID:', clientId);
 
   const { data: client, error: fetchError } = await supabase
@@ -95,7 +96,7 @@ export async function removeVisit(clientId: string, operatorId: string): Promise
   return updated as Client;
 }
 
-export async function resetVisits(clientId: string, operatorId: string): Promise<Client> {
+export async function resetVisits(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
   console.log('FETCH CLIENT BY ID:', clientId);
 
   const { data: client, error: fetchError } = await supabase
@@ -139,7 +140,7 @@ export async function resetVisits(clientId: string, operatorId: string): Promise
   return updated as Client;
 }
 
-export async function searchClientByPhone(phone: string, salonId: string): Promise<Client | null> {
+export async function searchClientByPhone(supabase: SupabaseClient, phone: string, salonId: string): Promise<Client | null> {
   const { data, error } = await supabase
     .from('clients')
     .select('*')

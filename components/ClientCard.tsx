@@ -2,7 +2,6 @@
 
 import { useState } from 'react';
 import { Client } from '@/lib/supabase';
-import { addVisit, removeVisit, resetVisits } from '@/lib/visits';
 
 interface ClientCardProps {
   client: Client;
@@ -10,7 +9,7 @@ interface ClientCardProps {
   operatorId: string;
 }
 
-export default function ClientCard({ client, onUpdate, operatorId }: ClientCardProps) {
+export default function ClientCard({ client, onUpdate, operatorId }: Readonly<ClientCardProps>) {
   const [loading, setLoading] = useState<'add' | 'remove' | 'reset' | null>(null);
   const [error, setError] = useState('');
   const [showRewardModal, setShowRewardModal] = useState(false);
@@ -73,7 +72,30 @@ export default function ClientCard({ client, onUpdate, operatorId }: ClientCardP
     setLoading('reset');
     setError('');
     try {
-      const updated = await resetVisits(client.id, operatorId);
+      const res = await fetch('/api/visits', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          clientId: client.id,
+          operatorId,
+          action: 0
+        }),
+      });
+
+      const text = await res.text();
+      let data;
+
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error('Invalid server response');
+      }
+
+      if (!res.ok) {
+        throw new Error(data?.error || 'Request failed');
+      }
+
+      const updated = data.client;
       onUpdate(updated);
       setShowRewardModal(false);
     } catch (e: unknown) {
@@ -103,16 +125,16 @@ export default function ClientCard({ client, onUpdate, operatorId }: ClientCardP
 
         {/* Mini stamp grid */}
         <div className="grid grid-cols-10 gap-1.5 mb-4">
-          {Array.from({ length: VISIT_GOAL }).map((_, i) => (
+          {Array.from({ length: VISIT_GOAL }, (_, stampNumber) => stampNumber + 1).map((stampNumber) => (
             <div
-              key={i}
+              key={stampNumber}
               className={`aspect-square rounded-md flex items-center justify-center transition-all duration-200
-                ${i < client.visits
+                ${stampNumber <= client.visits
                   ? 'bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)]'
                   : 'bg-[#1e1e1e] border border-[var(--border)]'
                 }`}
             >
-              {i < client.visits && (
+              {stampNumber <= client.visits && (
                 <svg viewBox="0 0 24 24" className="w-3 h-3 text-[var(--dark)]" fill="currentColor">
                   <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
                 </svg>
