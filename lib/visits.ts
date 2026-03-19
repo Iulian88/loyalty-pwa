@@ -33,15 +33,16 @@ export async function addVisit(clientId: string, operatorId: string): Promise<Cl
     throw new Error(updateError?.message || 'Update failed');
   }
 
-  const { error: insertError } = await supabase.from('visits_log').insert({
-    client_id: clientId,
-    operator_id: operatorId,
-    action: 1
-  });
+  const { error: logError } = await supabase
+    .from('visits_log')
+    .insert({
+      client_id: clientId,
+      operator_id: operatorId,
+      action: 1
+    });
 
-  if (insertError) {
-    console.error('Supabase addVisit visits_log insert error:', insertError);
-    throw new Error(insertError.message);
+  if (logError) {
+    console.error('VISIT LOG ERROR:', logError);
   }
 
   return updated as Client;
@@ -79,15 +80,16 @@ export async function removeVisit(clientId: string, operatorId: string): Promise
     throw new Error(updateError?.message || 'Update failed');
   }
 
-  const { error: insertError } = await supabase.from('visits_log').insert({
-    client_id: clientId,
-    operator_id: operatorId,
-    action: -1
-  });
+  const { error: logError } = await supabase
+    .from('visits_log')
+    .insert({
+      client_id: clientId,
+      operator_id: operatorId,
+      action: -1
+    });
 
-  if (insertError) {
-    console.error('Supabase removeVisit visits_log insert error:', insertError);
-    throw new Error(insertError.message);
+  if (logError) {
+    console.error('VISIT LOG ERROR:', logError);
   }
 
   return updated as Client;
@@ -122,15 +124,16 @@ export async function resetVisits(clientId: string, operatorId: string): Promise
     throw new Error(updateError?.message || 'Update failed');
   }
 
-  const { error: insertError } = await supabase.from('visits_log').insert({
-    client_id: clientId,
-    operator_id: operatorId,
-    action: -10
-  });
+  const { error: logError } = await supabase
+    .from('visits_log')
+    .insert({
+      client_id: clientId,
+      operator_id: operatorId,
+      action: -10
+    });
 
-  if (insertError) {
-    console.error('Supabase resetVisits visits_log insert error:', insertError);
-    throw new Error(insertError.message);
+  if (logError) {
+    console.error('VISIT LOG ERROR:', logError);
   }
 
   return updated as Client;

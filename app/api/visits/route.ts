@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { addVisit, removeVisit, resetVisits } from '@/lib/visits';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,18 +12,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
-    let updated;
+    const { data: existingClient, error: fetchError } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('id', clientId)
+      .single();
+
+    if (fetchError || !existingClient) {
+      return NextResponse.json({ error: 'Client not found.' }, { status: 400 });
+    }
+
+    let updatedClient;
     if (action === 1) {
-      updated = await addVisit(clientId, operatorId);
+      updatedClient = await addVisit(clientId, operatorId);
     } else if (action === -1) {
-      updated = await removeVisit(clientId, operatorId);
+      updatedClient = await removeVisit(clientId, operatorId);
     } else if (action === 0) {
-      updated = await resetVisits(clientId, operatorId);
+      updatedClient = await resetVisits(clientId, operatorId);
     } else {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    return NextResponse.json({ client: updated });
+    console.log('RETURNING SUCCESS:', updatedClient);
+    return NextResponse.json({ client: updatedClient }, { status: 200 });
   } catch (error) {
     console.error('Visit update error:', error);
     return NextResponse.json({ error: (error as Error).message }, { status: 400 });
