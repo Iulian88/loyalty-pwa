@@ -9,7 +9,6 @@ const supabase = createClient(
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('API SUPABASE URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
     console.log('SUPABASE URL (API):', process.env.NEXT_PUBLIC_SUPABASE_URL);
     const { clientId, operatorId, action } = await req.json();
     console.log('POST /api/visits body:', { clientId, operatorId, action });
@@ -18,13 +17,14 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 
-    console.log('CLIENT ID SEARCH:', clientId);
+    console.log('CLIENT ID RECEIVED:', clientId);
     const { data: existingClient, error: fetchError } = await supabase
       .from('clients')
       .select('id')
       .eq('id', clientId)
       .single();
-    console.log('RESULT:', existingClient, fetchError);
+    console.log('SUPABASE RESULT:', existingClient);
+    console.log('SUPABASE ERROR:', fetchError);
 
     if (fetchError) {
       console.error('SUPABASE ERROR:', fetchError);
