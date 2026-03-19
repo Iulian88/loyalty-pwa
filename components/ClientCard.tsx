@@ -22,10 +22,10 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
     setLoading(action);
     setError('');
     try {
-      console.log('SENDING:', {
+      console.log('UI SENDING:', {
         clientId: client.id,
         operatorId,
-        action: action === 'add' ? 1 : -1
+        action
       });
 
       const res = await fetch('/api/visits', {
@@ -38,10 +38,10 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
         }),
       });
 
-      console.log('STATUS:', res.status);
+      console.log('UI STATUS:', res.status);
 
       const text = await res.text();
-      console.log('RAW RESPONSE:', text);
+      console.log('UI RESPONSE:', text);
 
       let data;
 
