@@ -22,9 +22,10 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
     setLoading(action);
     setError('');
     try {
+      const safeOperatorId = operatorId || 'operator';
       console.log('UI SENDING:', {
         clientId: client.id,
-        operatorId,
+        operatorId: safeOperatorId,
         action
       });
 
@@ -33,7 +34,7 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId: client.id,
-          operatorId,
+          operatorId: safeOperatorId,
           action: action === 'add' ? 1 : -1
         }),
       });
@@ -72,12 +73,13 @@ export default function ClientCard({ client, onUpdate, operatorId }: Readonly<Cl
     setLoading('reset');
     setError('');
     try {
+      const safeOperatorId = operatorId || 'operator';
       const res = await fetch('/api/visits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           clientId: client.id,
-          operatorId,
+          operatorId: safeOperatorId,
           action: 0
         }),
       });
