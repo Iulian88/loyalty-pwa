@@ -17,6 +17,7 @@ export default function ScanQRPage() {
   const [cameraError, setCameraError] = useState('');
   const [scannerReady, setScannerReady] = useState(false);
   const [operatorId, setOperatorId] = useState<string>('');
+  const [processingScan, setProcessingScan] = useState(false);
 
   useEffect(() => {
     fetch('/api/operator/session')
@@ -51,10 +52,14 @@ export default function ScanQRPage() {
           aspectRatio: 1.0,
         },
         async (decodedText: string) => {
+          if (processingScan) return;
+          setProcessingScan(true);
+
           // Stop scanning after successful read
           await scanner.stop();
           setScanning(false);
           await handleScanResult(decodedText);
+          setProcessingScan(false);
         },
         () => {
           // Scan failure - normal, keep trying
@@ -76,10 +81,12 @@ export default function ScanQRPage() {
   const stopScanner = async () => {
     if (html5QrRef.current) {
       try {
-        const scanner = html5QrRef.current as { stop: () => Promise<void>; isScanning: boolean };
+        const scanner = html5QrRef.current as { stop: () => Promise<void>; clear: () => Promise<void>; isScanning: boolean };
         if (scanner.isScanning) {
           await scanner.stop();
         }
+        await scanner.clear();
+        html5QrRef.current = null;
       } catch (e) {
         // Ignore stop errors
       }
@@ -214,6 +221,7 @@ export default function ScanQRPage() {
                 onClick={() => {
                   setClient(null);
                   setError('');
+                  void startScanner();
                 }}
                 className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
               >

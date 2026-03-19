@@ -23,10 +23,14 @@ export default function ClientCard({ client, onUpdate, operatorId }: ClientCardP
     setLoading(action);
     setError('');
     try {
-      const res = await fetch(`/api/visits/${client.id}`, {
+      const res = await fetch('/api/visits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action }),
+        body: JSON.stringify({
+          clientId: client.id,
+          operatorId,
+          action: action === 'add' ? 1 : -1
+        }),
       });
       if (!res.ok) {
         const { error } = await res.json();
