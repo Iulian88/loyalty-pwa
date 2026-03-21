@@ -2,6 +2,22 @@ import { supabase } from './supabase';
 import jwt from 'jsonwebtoken';
 import type { Client, VisitLog } from '../types';
 
+function getClientJwtSecret(): string {
+  const secret = process.env.CLIENT_JWT_SECRET;
+  if (!secret) {
+    throw new Error('CLIENT_JWT_SECRET environment variable is not set. Refusing to start.');
+  }
+  return secret;
+}
+
+function getOperatorJwtSecret(): string {
+  const secret = process.env.OPERATOR_JWT_SECRET;
+  if (!secret) {
+    throw new Error('OPERATOR_JWT_SECRET environment variable is not set. Refusing to start.');
+  }
+  return secret;
+}
+
 export type { Client, VisitLog } from '../types';
 
 export interface ClientSession {
@@ -63,7 +79,7 @@ export async function loginClient(phone: string, salonId: string): Promise<Clien
 export async function getClientById(id: string): Promise<Client> {
   const { data, error } = await supabase
     .from('clients')
-    .select('*')
+    .select('id, name, phone, visits, reward_claimed, created_at, salon_id, claimed_at')
     .eq('id', id)
     .single();
 
@@ -76,7 +92,7 @@ export async function getClientById(id: string): Promise<Client> {
 export function setSession(client: Client) {
   const token = jwt.sign(
     { id: client.id, name: client.name, phone: client.phone },
-    process.env.NEXTAUTH_SECRET || 'fallback-secret',
+    getClientJwtSecret(),
     { expiresIn: '7d' }
   );
   return token;
@@ -84,7 +100,7 @@ export function setSession(client: Client) {
 
 export function getSession(token: string): ClientSession | null {
   try {
-    const decoded = jwt.verify(token, process.env.NEXTAUTH_SECRET || 'fallback-secret') as ClientSession;
+    const decoded = jwt.verify(token, getClientJwtSecret()) as ClientSession;
     return decoded;
   } catch {
     return null;
@@ -97,6 +113,29 @@ export function clearSession() {
 
 export function saveClientSession(client: Client) {
   localStorage.setItem('client_session', JSON.stringify(client));
+}
+
+// ── Operator session helpers ──────────────────────────────────────────────────
+
+export function signOperatorToken(): string {
+  return jwt.sign(
+    { operatorId: 'operator', role: 'operator' },
+    getOperatorJwtSecret(),
+    { expiresIn: '1d' }
+  );
+}
+
+export function verifyOperatorToken(token: string): string | null {
+  try {
+    const decoded = jwt.verify(
+      token,
+      getOperatorJwtSecret()
+    ) as { operatorId: string; role: string };
+    if (decoded.role !== 'operator') return null;
+    return decoded.operatorId;
+  } catch {
+    return null;
+  }
 }
 
 export function loadClientSession(): Client | null {

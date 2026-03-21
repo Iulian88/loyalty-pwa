@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { addVisit, removeVisit, resetVisits, claimReward } from '@/lib/visits';
+import { verifyOperatorToken } from '@/lib/auth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,10 +9,19 @@ const supabase = createClient(
 );
 
 export async function POST(req: NextRequest) {
-  try {
-    const { clientId, operatorId, action } = await req.json();
+  const sessionToken = req.cookies.get('operator_session')?.value;
+  if (!sessionToken) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+  const operatorId = verifyOperatorToken(sessionToken);
+  if (!operatorId) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
 
-    if (!clientId || !operatorId || ![-1, 0, 1, 2].includes(action)) {
+  try {
+    const { clientId, action } = await req.json();
+
+    if (!clientId || ![-1, 0, 1, 2].includes(action)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
     }
 

@@ -7,6 +7,7 @@ import Link from 'next/link';
 export default function LoginPage() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
+  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -24,14 +25,15 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.trim() }),
+        body: JSON.stringify({ phone: phone.trim(), pin: pin || undefined }),
+        credentials: 'include',
       });
       if (!res.ok) {
         const { error } = await res.json();
+        if (error === 'PIN required') throw new Error('Please enter your PIN.');
+        if (error === 'Invalid PIN') throw new Error('Invalid PIN. Please try again.');
         throw new Error(error);
       }
-      const { token } = await res.json();
-      document.cookie = `token=${token}; path=/; max-age=604800`; // 7 days
       router.push('/dashboard');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Login failed.');
@@ -73,6 +75,21 @@ export default function LoginPage() {
               className="input-field w-full px-4 py-3 rounded-xl text-base"
               placeholder="Enter your phone number"
               required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="pin" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
+              PIN <span className="normal-case tracking-normal text-[var(--muted)]">(if set)</span>
+            </label>
+            <input
+              id="pin"
+              type="password"
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              className="input-field w-full px-4 py-3 rounded-xl text-base"
+              placeholder="••••"
+              autoComplete="current-password"
             />
           </div>
 

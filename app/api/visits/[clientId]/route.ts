@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { addVisit, removeVisit } from '@/lib/visits';
-import { getSession } from '@/lib/auth';
+import { getSession, verifyOperatorToken } from '@/lib/auth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -33,13 +33,21 @@ export async function GET(request: NextRequest, { params }: { params: { clientId
 }
 
 export async function POST(request: NextRequest, { params }: { params: { clientId: string } }) {
+  const sessionToken = request.cookies.get('operator_session')?.value;
+  if (!sessionToken) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+  const operatorId = verifyOperatorToken(sessionToken);
+  if (!operatorId) {
+    return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  }
+
   try {
     const body = await request.json();
     const { action } = body;
     if (!action || !['add', 'remove'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
-    const operatorId = 'operator';
     let client;
     if (action === 'add') {
       client = await addVisit(supabase, params.clientId, operatorId);

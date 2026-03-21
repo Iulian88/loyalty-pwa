@@ -8,6 +8,8 @@ export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -21,6 +23,14 @@ export default function RegisterPage() {
       setError('Please enter a valid phone number.');
       return;
     }
+    if (pin && !/^\d{4,}$/.test(pin)) {
+      setError('PIN must be at least 4 digits.');
+      return;
+    }
+    if (pin !== confirmPin) {
+      setError('PINs do not match.');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -29,14 +39,13 @@ export default function RegisterPage() {
       const res = await fetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: name.trim(), phone: phone.trim() }),
+        body: JSON.stringify({ name: name.trim(), phone: phone.trim(), pin: pin || undefined }),
+        credentials: 'include',
       });
       if (!res.ok) {
         const { error } = await res.json();
         throw new Error(error);
       }
-      const { token } = await res.json();
-      document.cookie = `token=${token}; path=/; max-age=604800`; // 7 days
       router.push('/dashboard');
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Registration failed.');
@@ -93,6 +102,40 @@ export default function RegisterPage() {
               className="input-field w-full px-4 py-3 rounded-xl text-base"
               placeholder="Enter your phone number"
               required
+            />
+          </div>
+
+          <div>
+            <label htmlFor="pin" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
+              PIN <span className="normal-case tracking-normal text-[var(--muted)]">(optional, 4 digits)</span>
+            </label>
+            <input
+              id="pin"
+              type="password"
+              inputMode="numeric"
+              value={pin}
+              onChange={(e) => setPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              className="input-field w-full px-4 py-3 rounded-xl text-base"
+              placeholder="••••"
+              maxLength={6}
+              autoComplete="new-password"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="confirmPin" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
+              Confirm PIN
+            </label>
+            <input
+              id="confirmPin"
+              type="password"
+              inputMode="numeric"
+              value={confirmPin}
+              onChange={(e) => setConfirmPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+              className="input-field w-full px-4 py-3 rounded-xl text-base"
+              placeholder="••••"
+              maxLength={6}
+              autoComplete="new-password"
             />
           </div>
 
