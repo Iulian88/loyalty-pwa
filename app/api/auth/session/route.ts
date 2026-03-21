@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, getClientById } from '@/lib/auth';
+import { VISIT_GOAL } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     }
 
     const client = await getClientById(session.id);
-    return NextResponse.json({ client });
+    return NextResponse.json({ client, visitGoal: VISIT_GOAL });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }

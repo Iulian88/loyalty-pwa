@@ -11,6 +11,10 @@ export default function ShowQRPage() {
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const prevVisitsRef = useRef<number | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [toast, setToast] = useState('');
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -20,6 +24,7 @@ export default function ShowQRPage() {
           router.replace('/login');
         } else {
           setClient(data.client);
+          prevVisitsRef.current = data.client.visits;
         }
       })
       .catch(() => router.replace('/login'));
@@ -47,10 +52,38 @@ export default function ShowQRPage() {
     });
   }, [client]);
 
+  useEffect(() => {
+    if (!client) return;
+    intervalRef.current = setInterval(() => {
+      fetch('/api/auth/session')
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) return;
+          const newVisits = data.client.visits;
+          if (prevVisitsRef.current !== null && newVisits > prevVisitsRef.current) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+            setToast('+1 vizită adăugată ✔️');
+            toastTimerRef.current = setTimeout(() => router.push('/dashboard'), 1500);
+          }
+          prevVisitsRef.current = newVisits;
+          setClient(data.client);
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, [client?.id, router]);
+
   if (!client) return null;
 
   return (
     <main className="min-h-screen flex flex-col pb-24">
+      <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1a1a] border border-[var(--gold-dim)]/40 rounded-2xl px-5 py-3 shadow-2xl pointer-events-none transition-all duration-300 ${toast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+        <p className="text-sm font-semibold text-[var(--gold)] whitespace-nowrap">{toast}</p>
+      </div>
       {/* Background */}
       <div className="absolute inset-0 pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-80 h-80 rounded-full bg-[var(--gold-dim)]/6 blur-3xl" />

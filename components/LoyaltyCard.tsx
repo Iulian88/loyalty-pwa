@@ -3,30 +3,42 @@
 interface LoyaltyCardProps {
   visits: number;
   name: string;
+  visitGoal: number;
+  bump?: boolean;
 }
 
-export default function LoyaltyCard({ visits, name }: LoyaltyCardProps) {
-  const VISIT_GOAL = 10;
-  const isComplete = visits >= VISIT_GOAL;
-  const progress = Math.min((visits / VISIT_GOAL) * 100, 100);
+function getProximityMessage(visits: number, visitGoal: number): string {
+  if (visitGoal === 0) return '';
+  if (visits === 0) return 'Începe acum';
+  const progress = visits / visitGoal;
+  if (progress >= 1)    return '🎉 Ai bonus!';
+  if (progress >= 0.9)  return 'Încă puțin!';
+  if (progress >= 0.75) return 'Aproape acolo!';
+  if (progress >= 0.6)  return 'Se apropie';
+  return `Mai ai ${visitGoal - visits} vizite`;
+}
+
+export default function LoyaltyCard({ visits, name, visitGoal, bump }: LoyaltyCardProps) {
+  const isComplete = visits >= visitGoal;
+  const progress = visitGoal > 0 ? Math.min((visits / visitGoal) * 100, 100) : 0;
 
   return (
-    <div className={`glass-card rounded-2xl p-6 w-full max-w-sm mx-auto ${isComplete ? 'reward-glow' : ''}`}>
+    <div className={`glass-card rounded-2xl p-6 w-full max-w-sm mx-auto ${isComplete ? 'reward-glow' : ''} ${bump ? 'card-bump' : ''}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <p className="text-xs uppercase tracking-widest text-[var(--muted)] font-body mb-1">Loyalty Card</p>
+          <p className="text-xs uppercase tracking-widest text-[var(--muted)] font-body mb-1">Card fidelitate</p>
           <h2 className="font-display text-lg font-semibold text-[var(--text)]">{name}</h2>
         </div>
         <div className="text-right">
-          <p className="text-xs text-[var(--muted)] mb-1">Progress</p>
-          <p className="font-display text-2xl font-bold text-gold-shimmer">{visits}<span className="text-[var(--muted)] text-lg">/{VISIT_GOAL}</span></p>
+          <p className="text-xs text-[var(--muted)] mb-1">Progres</p>
+          <p className="font-display text-2xl font-bold text-gold-shimmer">{visits}<span className="text-[var(--muted)] text-lg">/{visitGoal}</span></p>
         </div>
       </div>
 
       {/* Stamp Grid */}
       <div className="grid grid-cols-5 gap-2 mb-5">
-        {Array.from({ length: VISIT_GOAL }).map((_, i) => {
+        {Array.from({ length: visitGoal }).map((_, i) => {
           const filled = i < visits;
           return (
             <div
@@ -61,15 +73,14 @@ export default function LoyaltyCard({ visits, name }: LoyaltyCardProps) {
       {/* Status */}
       <div className="text-center">
         {isComplete ? (
-          <div className="flex items-center justify-center gap-2">
-            <svg viewBox="0 0 24 24" className="w-4 h-4 text-[var(--gold)]" fill="currentColor">
-              <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
-            </svg>
-            <p className="text-sm font-semibold text-[var(--gold)]">Reward unlocked! 🎉</p>
+          <div className="flex flex-col items-center gap-1">
+            <span className="text-3xl leading-none">🎉</span>
+            <p className="font-display font-bold text-[var(--gold)] text-base">Felicitări!</p>
+            <p className="text-xs text-[var(--gold-light)] mt-0.5">Ai câștigat bonusul!</p>
           </div>
         ) : (
           <p className="text-sm text-[var(--muted)]">
-            {VISIT_GOAL - visits} more visit{VISIT_GOAL - visits !== 1 ? 's' : ''} to your free haircut
+            {getProximityMessage(visits, visitGoal)}
           </p>
         )}
       </div>

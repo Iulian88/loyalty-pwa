@@ -15,6 +15,7 @@ function SearchClientContent() {
   const [searched, setSearched] = useState(false);
   const [error, setError] = useState('');
   const [operatorId, setOperatorId] = useState<string>('');
+  const [visitGoal, setVisitGoal] = useState(0);
 
   useEffect(() => {
     fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
@@ -24,6 +25,7 @@ function SearchClientContent() {
           router.replace('/operator/login');
         } else {
           setOperatorId(data.operatorId);
+          setVisitGoal(data.visitGoal);
           // Auto-search if phone param present
           if (searchParams.get('phone')) {
             handleSearch(searchParams.get('phone')!);
@@ -118,6 +120,7 @@ function SearchClientContent() {
                 client={client}
                 onUpdate={updated => setClient(updated)}
                 operatorId={operatorId}
+                visitGoal={visitGoal}
               />
             ) : (
               <div className="glass-card rounded-2xl p-8 text-center">

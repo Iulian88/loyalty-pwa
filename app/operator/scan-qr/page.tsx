@@ -17,6 +17,7 @@ export default function ScanQRPage() {
   const [cameraError, setCameraError] = useState('');
   const [scannerReady, setScannerReady] = useState(false);
   const [operatorId, setOperatorId] = useState<string>('');
+  const [visitGoal, setVisitGoal] = useState(0);
   const [processingScan, setProcessingScan] = useState(false);
 
   useEffect(() => {
@@ -27,6 +28,7 @@ export default function ScanQRPage() {
           router.replace('/operator/login');
         } else {
           setOperatorId(data.operatorId || data?.data?.operatorId || "operator");
+          setVisitGoal(data.visitGoal);
         }
       })
       .catch(() => router.replace('/operator/login'));
@@ -71,9 +73,9 @@ export default function ScanQRPage() {
       setScannerReady(false);
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.includes('permission') || msg.includes('NotAllowed')) {
-        setCameraError('Camera permission denied. Please allow camera access and try again.');
+        setCameraError('Acces cameră refuzat. Permite accesul și încearcă din nou.');
       } else {
-        setCameraError('Could not start camera. ' + msg);
+        setCameraError('Nu s-a putut porni camera. ' + msg);
       }
     }
   };
@@ -112,7 +114,7 @@ export default function ScanQRPage() {
       const found = await getClientById(clientId);
       setClient(found);
     } catch {
-      setError('Invalid QR code or client not found. Please try again.');
+      setError('Cod QR invalid sau clientul nu a fost găsit. Încearcă din nou.');
     }
   };
 
@@ -123,8 +125,8 @@ export default function ScanQRPage() {
       {/* Header */}
       <header className="p-6 pt-8 fade-up">
         <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">Operator</p>
-        <h1 className="font-display text-3xl font-bold text-[var(--text)]">Scan QR Code</h1>
-        <p className="text-sm text-[var(--muted)] mt-1">Point camera at client's QR code</p>
+        <h1 className="font-display text-3xl font-bold text-[var(--text)]">Scanează codul QR</h1>
+        <p className="text-sm text-[var(--muted)] mt-1">Îndreaptă camera spre codul QR al clientului</p>
       </header>
 
       <div className="px-6 space-y-5">
@@ -149,8 +151,8 @@ export default function ScanQRPage() {
                       </svg>
                     </div>
                     <div className="text-center">
-                      <p className="text-[var(--text-dim)] font-medium">Camera not active</p>
-                      <p className="text-sm text-[var(--muted)] mt-1">Tap the button below to start scanning</p>
+                      <p className="text-[var(--text-dim)] font-medium">Camera inactivă</p>
+                      <p className="text-sm text-[var(--muted)] mt-1">Apasă butonul de mai jos</p>
                     </div>
                   </div>
                 )}
@@ -188,7 +190,7 @@ export default function ScanQRPage() {
                     <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                       <path d="M12 8c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4-1.79-4-4-4zm-7 7H3v4h4v-2H5v-2zm14 0v2h-2v2h4v-4h-2zM3 9h2V7h2V5H3v4zm16-4v2h2v2h2V5h-4z"/>
                     </svg>
-                    Start Camera
+                    Pornește camera
                   </button>
                 ) : (
                   <button
@@ -198,7 +200,7 @@ export default function ScanQRPage() {
                     <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
                       <path d="M6 6h12v12H6z"/>
                     </svg>
-                    Stop Scanning
+                    Oprește scanarea
                   </button>
                 )}
               </div>
@@ -216,7 +218,7 @@ export default function ScanQRPage() {
         {client && (
           <div className="fade-up">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-xs uppercase tracking-widest text-[var(--gold-dim)]">✓ Client Found</p>
+              <p className="text-xs uppercase tracking-widest text-[var(--gold-dim)]">✓ Client găsit</p>
               <button
                 onClick={() => {
                   setClient(null);
@@ -225,13 +227,14 @@ export default function ScanQRPage() {
                 }}
                 className="text-xs text-[var(--muted)] hover:text-[var(--text)] transition-colors"
               >
-                Scan another
+                Scanează alt client
               </button>
             </div>
             <ClientCard
               client={client}
               onUpdate={updated => setClient(updated)}
               operatorId={operatorId}
+              visitGoal={visitGoal}
             />
           </div>
         )}

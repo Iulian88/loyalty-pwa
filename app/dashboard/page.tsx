@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Client } from '@/lib/auth';
@@ -13,7 +13,13 @@ export default function DashboardPage() {
   const router = useRouter();
   const [client, setClient] = useState<Client | null>(null);
   const [loading, setLoading] = useState(true);
+  const [visitGoal, setVisitGoal] = useState(0);
   const [visitHistory, setVisitHistory] = useState<VisitLog[]>([]);
+  const prevVisitsRef = useRef<number | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const bumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [toast, setToast] = useState('');
+  const [cardBump, setCardBump] = useState(false);
 
   useEffect(() => {
     fetch('/api/auth/session')
@@ -23,6 +29,8 @@ export default function DashboardPage() {
           router.replace('/login');
         } else {
           setClient(data.client);
+          setVisitGoal(data.visitGoal);
+          prevVisitsRef.current = data.client.visits;
         }
       })
       .catch(() => router.replace('/login'))
@@ -36,6 +44,35 @@ export default function DashboardPage() {
       .then(data => { if (data.history) setVisitHistory(data.history); })
       .catch(() => {});
   }, [client]);
+
+  useEffect(() => {
+    if (!client) return;
+    const interval = setInterval(() => {
+      fetch('/api/auth/session')
+        .then(res => res.json())
+        .then(data => {
+          if (data.error) return;
+          const newVisits = data.client.visits;
+          if (prevVisitsRef.current !== null && newVisits > prevVisitsRef.current) {
+            if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+            setToast('+1 vizită adăugată ✔️');
+            toastTimerRef.current = setTimeout(() => setToast(''), 2000);
+            if (bumpTimerRef.current) clearTimeout(bumpTimerRef.current);
+            setCardBump(true);
+            bumpTimerRef.current = setTimeout(() => setCardBump(false), 450);
+          }
+          prevVisitsRef.current = newVisits;
+          setClient(data.client);
+          setVisitGoal(data.visitGoal);
+        })
+        .catch(() => {});
+    }, 3000);
+    return () => {
+      clearInterval(interval);
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+      if (bumpTimerRef.current) clearTimeout(bumpTimerRef.current);
+    };
+  }, [client?.id]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -52,11 +89,13 @@ export default function DashboardPage() {
 
   if (!client) return null;
 
-  const VISIT_GOAL = 10; // or from env
-  const isComplete = client.visits >= VISIT_GOAL;
+  const isComplete = client.visits >= visitGoal;
 
   return (
     <main className="min-h-screen flex flex-col pb-24">
+      <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 bg-[#1a1a1a] border border-[var(--gold-dim)]/40 rounded-2xl px-5 py-3 shadow-2xl pointer-events-none transition-all duration-300 ${toast ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2'}`}>
+        <p className="text-sm font-semibold text-[var(--gold)] whitespace-nowrap">{toast}</p>
+      </div>
       <InstallPrompt />
 
       {/* Background glow */}
@@ -65,7 +104,7 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="flex items-center justify-between p-6 pt-8">
         <div className="fade-up">
-          <p className="text-xs uppercase tracking-widest text-[var(--muted)]">Good day,</p>
+          <p className="text-xs uppercase tracking-widest text-[var(--muted)]">Bună ziua,</p>
           <h1 className="font-display text-2xl font-semibold text-[var(--text)]">{client.name.split(' ')[0]}</h1>
         </div>
         <button
@@ -82,7 +121,7 @@ export default function DashboardPage() {
       <div className="flex-1 px-6 space-y-5">
         {/* Loyalty Card */}
         <div className="relative fade-up delay-100">
-          <LoyaltyCard visits={client.visits} name={client.name} />
+          <LoyaltyCard visits={client.visits} name={client.name} visitGoal={visitGoal} bump={cardBump} />
         </div>
 
         {/* Reward Banner */}
@@ -91,8 +130,8 @@ export default function DashboardPage() {
             <div className="flex items-center gap-4">
               <div className="text-3xl">🎉</div>
               <div>
-                <h3 className="font-display font-semibold text-[var(--gold)] text-lg">Reward Unlocked!</h3>
-                <p className="text-sm text-[var(--text-dim)]">Show this to your stylist to claim your free haircut</p>
+                <h3 className="font-display font-semibold text-[var(--gold)] text-lg">🎉 Felicitări!</h3>
+                <p className="text-sm text-[var(--text-dim)]">Ai câștigat bonusul! Arată cardul stilistului.</p>
               </div>
             </div>
           </div>
@@ -109,7 +148,7 @@ export default function DashboardPage() {
                 <path d="M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2zM15 15h2v2h-2zM13 17h2v2h-2zM17 13h2v2h-2zM19 15h2v2h-2zM17 17h2v2h-2zM19 19h2v2h-2zM21 13h-2v2h2z"/>
               </svg>
             </div>
-            <span className="text-sm font-medium text-[var(--text-dim)]">Show QR</span>
+            <span className="text-sm font-medium text-[var(--text-dim)]">Arată codul</span>
           </Link>
 
           <div className="glass-card rounded-2xl p-4 flex flex-col items-center gap-2 border border-[var(--border)]">
@@ -119,30 +158,30 @@ export default function DashboardPage() {
               </svg>
             </div>
             <span className="text-sm font-medium text-[var(--text-dim)]">
-              {VISIT_GOAL - client.visits > 0 ? `${VISIT_GOAL - client.visits} to go` : 'Completed!'}
+              {visitGoal - client.visits > 0 ? `Mai ai ${visitGoal - client.visits}` : 'Finalizat!'}
             </span>
           </div>
         </div>
 
         {/* Stats */}
         <div className="glass-card rounded-2xl p-5 fade-up delay-400">
-          <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-4">Your Stats</h3>
+          <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-4">Statistici</h3>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
               <p className="font-display text-2xl font-bold text-[var(--gold)]">{client.visits}</p>
-              <p className="text-xs text-[var(--muted)] mt-1">Visits</p>
+              <p className="text-xs text-[var(--muted)] mt-1">Vizite</p>
             </div>
             <div className="text-center border-x border-[var(--border)]">
               <p className="font-display text-2xl font-bold text-[var(--text)]">
                 {client.reward_claimed ? '1' : '0'}
               </p>
-              <p className="text-xs text-[var(--muted)] mt-1">Rewards</p>
+              <p className="text-xs text-[var(--muted)] mt-1">Bonusuri</p>
             </div>
             <div className="text-center">
               <p className="font-display text-2xl font-bold text-[var(--text-dim)]">
-                {Math.max(VISIT_GOAL - client.visits, 0)}
+                {Math.max(visitGoal - client.visits, 0)}
               </p>
-              <p className="text-xs text-[var(--muted)] mt-1">Remaining</p>
+              <p className="text-xs text-[var(--muted)] mt-1">Rămase</p>
             </div>
           </div>
         </div>
@@ -150,16 +189,16 @@ export default function DashboardPage() {
         {/* Recent Activity */}
         {visitHistory.length > 0 && (
           <div className="glass-card rounded-2xl p-5 fade-up delay-500">
-            <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-4">Recent Activity</h3>
+            <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-4">Activitate recentă</h3>
             <div className="space-y-1">
               {visitHistory.map(log => {
                 const metaMap: Record<number, { icon: string; label: string; color: string }> = {
-                  1:  { icon: '✓', label: 'Visit recorded',  color: 'text-[var(--gold)]' },
-                  2:  { icon: '🎁', label: 'Reward claimed',  color: 'text-emerald-400' },
-                  [-1]: { icon: '−', label: 'Visit removed',   color: 'text-red-400' },
-                  0:  { icon: '↺', label: 'Card reset',       color: 'text-[var(--muted)]' },
+                  1:  { icon: '✓', label: 'Vizită înregistrată', color: 'text-[var(--gold)]' },
+                  2:  { icon: '🎁', label: 'Bonus colectat',       color: 'text-emerald-400' },
+                  [-1]: { icon: '−', label: 'Vizită ștearsă',      color: 'text-red-400' },
+                  0:  { icon: '↺', label: 'Card resetat',          color: 'text-[var(--muted)]' },
                 };
-                const meta = metaMap[log.action] ?? { icon: '·', label: 'Activity', color: 'text-[var(--muted)]' };
+                const meta = metaMap[log.action] ?? { icon: '·', label: 'Activitate', color: 'text-[var(--muted)]' };
                 return (
                   <div key={log.id} className="flex items-center gap-3 py-2 border-b border-[var(--border)] last:border-0">
                     <span className={`text-sm font-bold w-5 text-center flex-shrink-0 ${meta.color}`}>{meta.icon}</span>

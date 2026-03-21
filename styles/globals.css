@@ -173,6 +173,15 @@ body::before {
   to { transform: translateY(0); opacity: 1; }
 }
 
+/* Card visit-bump */
+.card-bump {
+  animation: card-bump 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes card-bump {
+  0%, 100% { transform: scale(1); }
+  50%       { transform: scale(1.03); }
+}
+
 /* Stagger delays */
 .delay-100 { animation-delay: 0.1s; opacity: 0; }
 .delay-200 { animation-delay: 0.2s; opacity: 0; }
