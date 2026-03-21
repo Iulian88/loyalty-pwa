@@ -16,6 +16,7 @@ export default function ClientCard({ client, onUpdate, operatorId, visitGoal }: 
   const [error, setError] = useState('');
   const [toast, setToast] = useState('');
   const [showRewardModal, setShowRewardModal] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isComplete = client.visits >= visitGoal;
@@ -75,6 +76,7 @@ export default function ClientCard({ client, onUpdate, operatorId, visitGoal }: 
     setLoading('reset');
     setError('');
     try {
+      await new Promise<void>(resolve => setTimeout(resolve, 350));
       const updated = await postAction(0);
       onUpdate(updated);
       showToast('Card resetat la 0');
@@ -83,6 +85,11 @@ export default function ClientCard({ client, onUpdate, operatorId, visitGoal }: 
     } finally {
       setLoading(null);
     }
+  };
+
+  const confirmReset = () => {
+    setShowResetModal(false);
+    handleReset();
   };
 
   const handleClaim = async () => {
@@ -236,7 +243,7 @@ export default function ClientCard({ client, onUpdate, operatorId, visitGoal }: 
         {/* Reset — operator correction tool, shown only when there are visits */}
         {client.visits > 0 && !isComplete && (
           <button
-            onClick={handleReset}
+            onClick={() => setShowResetModal(true)}
             disabled={loading !== null}
             className="w-full mt-3 py-2.5 rounded-xl text-xs text-[var(--muted)] hover:text-[var(--text-dim)] border border-[var(--border)] hover:border-[var(--border)]/60 transition-colors flex items-center justify-center gap-2 disabled:opacity-30"
           >
@@ -251,6 +258,35 @@ export default function ClientCard({ client, onUpdate, operatorId, visitGoal }: 
           </button>
         )}
       </div>
+
+      {/* Reset confirmation modal */}
+      {showResetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+          <div className="glass-card rounded-3xl p-8 max-w-sm w-full text-center fade-up">
+            <div className="text-4xl mb-4">⚠️</div>
+            <h2 className="font-display text-xl font-bold text-[var(--text)] mb-4">Resetezi vizitele?</h2>
+            <div className="text-sm text-[var(--text-dim)] mb-2 space-y-1">
+              <p className="font-semibold text-[var(--text)]">{client.name}</p>
+              <p>{client.visits} {client.visits === 1 ? 'vizită va fi ștearsă' : 'vizite vor fi șterse'}</p>
+            </div>
+            <p className="text-xs text-red-400 mb-6">Această acțiune nu poate fi anulată</p>
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={confirmReset}
+                className="w-full py-3 rounded-xl text-sm font-semibold bg-red-900/30 border border-red-900/50 text-red-400 hover:bg-red-900/50 transition-colors"
+              >
+                Confirmă resetarea
+              </button>
+              <button
+                onClick={() => setShowResetModal(false)}
+                className="btn-ghost py-3 rounded-xl text-sm"
+              >
+                Anulează
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Reward confirmation modal */}
       {showRewardModal && (

@@ -115,31 +115,65 @@ export default function OperatorDashboardPage() {
       <div className="px-6 space-y-5">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3 fade-up delay-100">
-          {[
-            { label: 'Clients', value: stats.total, icon: '👥' },
-            { label: "Today's Visits", value: stats.todayVisits, icon: '✂️' },
-            { label: 'Rewards', value: stats.rewarded, icon: '🎁' },
-          ].map(stat => (
-            <div key={stat.label} className="glass-card rounded-2xl p-4 text-center">
-              <div className="text-xl mb-1">{stat.icon}</div>
-              <p className="font-display text-2xl font-bold text-[var(--gold)]">{stat.value}</p>
-              <p className="text-xs text-[var(--muted)] mt-0.5">{stat.label}</p>
+          {/* Clienți — navigates to /operator/clients */}
+          <Link
+            href="/operator/clients"
+            className="glass-card rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] select-none"
+          >
+            <div className="flex justify-center mb-1">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--gold-dim)] transition-colors duration-200 group-hover:text-[var(--gold)]" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+              </svg>
             </div>
-          ))}
+            <p className="font-display text-2xl font-bold text-[var(--gold)]">{stats.total}</p>
+            <p className="text-xs text-[var(--muted)] mt-0.5">Clienți</p>
+          </Link>
+
+          <div className="glass-card rounded-2xl p-4 text-center transition-all duration-200 hover:scale-[1.02] hover:brightness-110 active:scale-[0.98]">
+            <div className="flex justify-center mb-1">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--gold-dim)]" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              </svg>
+            </div>
+            <p className="font-display text-2xl font-bold text-[var(--gold)]">{stats.todayVisits}</p>
+            <p className="text-xs text-[var(--muted)] mt-0.5">Vizite azi</p>
+          </div>
+
+          <div className="glass-card rounded-2xl p-4 text-center transition-all duration-200 hover:scale-[1.02] hover:brightness-110 active:scale-[0.98]">
+            <div className="flex justify-center mb-1">
+              <svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--gold-dim)]" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="20 12 20 22 4 22 4 12"/>
+                <rect x="2" y="7" width="20" height="5"/>
+                <line x1="12" y1="22" x2="12" y2="7"/>
+                <path d="M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7z"/>
+                <path d="M12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7z"/>
+              </svg>
+            </div>
+            <p className="font-display text-2xl font-bold text-[var(--gold)]">{stats.rewarded}</p>
+            <p className="text-xs text-[var(--muted)] mt-0.5">Bonusuri</p>
+          </div>
         </div>
 
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-3 fade-up delay-200">
           <Link
-            href="/operator/search-client"
+            href="/operator/subscriptions"
             className="glass-card rounded-2xl p-5 flex flex-col items-center gap-3 hover:border-[var(--gold-dim)]/40 transition-colors active:scale-95 border border-[var(--border)]"
           >
             <div className="w-12 h-12 rounded-2xl bg-[var(--gold-dim)]/10 flex items-center justify-center">
-              <svg viewBox="0 0 24 24" className="w-6 h-6 text-[var(--gold-dim)]" fill="currentColor">
-                <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+              <svg viewBox="0 0 24 24" className="w-6 h-6 text-[var(--gold-dim)]" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="5" width="20" height="14" rx="2"/>
+                <path d="M16 3v4M8 3v4M2 10h20"/>
+                <path d="M7 15h.01M12 15h.01M17 15h.01"/>
               </svg>
             </div>
-            <span className="text-sm font-semibold text-[var(--text-dim)]">Search Client</span>
+            <div className="text-center">
+              <p className="text-sm font-semibold text-[var(--text-dim)]">Abonament</p>
+              <p className="text-xs text-[var(--muted)] mt-0.5 leading-tight">Gestionează pachete preplătite</p>
+            </div>
           </Link>
 
           <Link
