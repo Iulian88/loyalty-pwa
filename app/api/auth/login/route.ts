@@ -6,8 +6,7 @@ import type { Client } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, phone, pin } = await request.json();
-    const clientName = name || phone;
+    const { phone, pin } = await request.json();
     const salonId = process.env.DEFAULT_SALON_ID || '00000000-0000-0000-0000-000000000001';
 
     const supabase = createClient(
@@ -28,24 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!data) {
-      // New client — create without PIN (no pin_hash)
-      const { data: newData, error: insertError } = await supabase
-        .from('clients')
-        .insert({
-          name: clientName,
-          phone,
-          salon_id: salonId,
-          visits: 0,
-          reward_claimed: false,
-        })
-        .select()
-        .single();
-
-      if (insertError) {
-        throw new Error(insertError.message);
-      }
-
-      client = newData as Client;
+      return NextResponse.json({ error: 'No account found for this phone number.' }, { status: 404 });
     } else {
       // Existing client — enforce PIN if one is set
       if (data.pin_hash) {

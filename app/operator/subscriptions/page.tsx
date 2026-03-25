@@ -24,6 +24,8 @@ export default function SubscriptionsPage() {
   const [sessionCount, setSessionCount] = useState<number>(10);
   const [activating, setActivating] = useState(false);
   const [activatedSub, setActivatedSub] = useState<{ sessions: number; used: number } | null>(null);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -33,10 +35,12 @@ export default function SubscriptionsPage() {
     fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
-        if (data.error) { router.replace('/operator/login'); return; }
+        if (data.error) { setAuthChecking(false); router.replace('/operator/login'); return; }
+        setAuthenticated(true);
+        setAuthChecking(false);
         loadClients();
       })
-      .catch(() => router.replace('/operator/login'));
+      .catch(() => { setAuthChecking(false); router.replace('/operator/login'); });
   }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadClients = async () => {
@@ -44,7 +48,7 @@ export default function SubscriptionsPage() {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('salon_id', '00000000-0000-0000-0000-000000000001');
+        .eq('salon_id', process.env.NEXT_PUBLIC_SALON_ID || '00000000-0000-0000-0000-000000000001');
       if (error) throw error;
       const sorted = (data || []).sort((a: Client, b: Client) => b.visits - a.visits);
       setAllClients(sorted);
@@ -139,6 +143,17 @@ export default function SubscriptionsPage() {
     setActivating(false);
     setShowModal(false);
   };
+
+  if (authChecking) return (
+    <main className="min-h-screen flex items-center justify-center">
+      <p className="text-[var(--muted)] text-sm">Se verifică sesiunea...</p>
+    </main>
+  );
+  if (!authenticated) return (
+    <main className="min-h-screen flex items-center justify-center">
+      <p className="text-[var(--muted)] text-sm">Nu ești autentificat. Redirecționare către login...</p>
+    </main>
+  );
 
   return (
     <main className="min-h-screen flex flex-col pb-24">

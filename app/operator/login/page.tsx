@@ -64,8 +64,9 @@ export default function OperatorLoginPage() {
 
         <form onSubmit={handleSubmit} className="space-y-4 fade-up delay-100">
           <div>
-            <label className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">Password</label>
+            <label htmlFor="operator-password" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">Password</label>
             <input
+              id="operator-password"
               type="password"
               value={password}
               onChange={e => setPassword(e.target.value)}

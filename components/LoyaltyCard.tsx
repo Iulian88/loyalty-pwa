@@ -18,7 +18,7 @@ function getProximityMessage(visits: number, visitGoal: number): string {
   return `Mai ai ${visitGoal - visits} vizite`;
 }
 
-export default function LoyaltyCard({ visits, name, visitGoal, bump }: LoyaltyCardProps) {
+export default function LoyaltyCard({ visits, name, visitGoal, bump }: Readonly<LoyaltyCardProps>) {
   const isComplete = visits >= visitGoal;
   const progress = visitGoal > 0 ? Math.min((visits / visitGoal) * 100, 100) : 0;
 
@@ -37,25 +37,25 @@ export default function LoyaltyCard({ visits, name, visitGoal, bump }: LoyaltyCa
       </div>
 
       {/* Stamp Grid */}
-      <div className="grid grid-cols-5 gap-2 mb-5">
-        {Array.from({ length: visitGoal }).map((_, i) => {
-          const filled = i < visits;
+      <div className="grid gap-2 mb-5" style={{ gridTemplateColumns: `repeat(${visitGoal}, minmax(0, 1fr))` }}>
+        {Array.from({ length: visitGoal }, (_, i) => i).map((pos) => {
+          const filled = pos < visits;
           return (
             <div
-              key={i}
+              key={pos}
               className={`stamp aspect-square rounded-xl flex items-center justify-center
                 ${filled
                   ? 'bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)] shadow-lg'
                   : 'bg-[#1e1e1e] border border-[var(--border)]'
                 }`}
-              style={{ animationDelay: filled ? `${i * 50}ms` : '0ms' }}
+              style={{ animationDelay: filled ? `${pos * 50}ms` : '0ms' }}
             >
               {filled ? (
                 <svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--dark)]" fill="currentColor">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
                 </svg>
               ) : (
-                <span className="text-[var(--border)] text-xs font-bold">{i + 1}</span>
+                <span className="text-[var(--border)] text-xs font-bold">{pos + 1}</span>
               )}
             </div>
           );

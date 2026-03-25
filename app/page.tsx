@@ -2,17 +2,23 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadClientSession, loadOperatorSession } from '@/lib/auth';
 import Link from 'next/link';
 
 export default function HomePage() {
   const router = useRouter();
 
   useEffect(() => {
-    const client = loadClientSession();
-    const operator = loadOperatorSession();
-    if (client) router.replace('/dashboard');
-    else if (operator) router.replace('/operator/dashboard');
+    fetch('/api/auth/session', { credentials: 'include', cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (!data.error) { router.replace('/dashboard'); return; }
+        return fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
+          .then(res => res.json())
+          .then(opData => {
+            if (!opData.error) router.replace('/operator/dashboard');
+          });
+      })
+      .catch(() => {}); // no active session, stay on home page
   }, [router]);
 
   return (

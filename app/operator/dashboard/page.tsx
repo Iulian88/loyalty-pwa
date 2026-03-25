@@ -1,96 +1,105 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { clearOperatorSession } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
-import type { Client } from '@/types';
 import NavBar from '@/components/NavBar';
+import type { Client } from '@/types';
+
+const SALON_ID = process.env.NEXT_PUBLIC_SALON_ID || '00000000-0000-0000-0000-000000000001';
 
 export default function OperatorDashboardPage() {
   const router = useRouter();
-  const [recentClients, setRecentClients] = useState<Client[]>([]);
-  const [stats, setStats] = useState({ total: 0, rewarded: 0, todayVisits: 0 });
-  const [loading, setLoading] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [todayVisits, setTodayVisits] = useState(0);
+  const [visitGoal, setVisitGoal] = useState(10);
+  const [rewardName, setRewardName] = useState('Tunsoare gratuită');
+  const [showRewardConfig, setShowRewardConfig] = useState(false);
+  const [editingReward, setEditingReward] = useState(false);
+  const [pendingRewardName, setPendingRewardName] = useState('');
+
+  // Derived from clients
+  const total = clients.length;
+  const rewarded = clients.filter(c => c.reward_claimed).length;
+  const stats = { total, rewarded, todayVisits };
+
+  useEffect(() => {
+    const stored = localStorage.getItem('reward_name');
+    if (stored) setRewardName(stored);
+  }, []);
+
+  // Keep a stable ref to clients for use inside the visits_log interval
+  const clientsRef = useRef(clients);
+  useEffect(() => { clientsRef.current = clients; }, [clients]);
 
   useEffect(() => {
     fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data.error) {
+          setAuthChecking(false);
           router.replace('/operator/login');
         } else {
-          fetchData();
+          setVisitGoal(data.visitGoal ?? 10);
+          setAuthenticated(true);
+          setAuthChecking(false);
         }
       })
-      .catch(() => router.replace('/operator/login'));
+      .catch(() => { setAuthChecking(false); router.replace('/operator/login'); });
   }, [router]);
 
-  const fetchData = async () => {
-    try {
-      const salonId = '00000000-0000-0000-0000-000000000001';
+  const fetchClients = useCallback(async () => {
+    const { data, error } = await supabase.from('clients').select('*').eq('salon_id', SALON_ID);
+    if (!error) setClients(data || []);
+  }, []);
 
-      const { data: salonClients, error: clientsError } = await supabase
-        .from('clients')
-        .select('*')
-        .eq('salon_id', salonId);
+  useEffect(() => {
+    if (!authenticated) return;
+    fetchClients();
+    const id = setInterval(fetchClients, 5000);
+    return () => clearInterval(id);
+  }, [authenticated, fetchClients]);
 
-      if (clientsError || !salonClients) {
-        throw new Error(clientsError?.message || 'Failed to load clients');
-      }
+  const fetchTodayVisits = useCallback(async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const { data } = await supabase
+      .from('visits_log')
+      .select('client_id')
+      .gte('created_at', today.toISOString())
+      .eq('action', 1);
+    const count = (data ?? []).filter(log =>
+      clientsRef.current.some(c => c.id === log.client_id)
+    ).length;
+    setTodayVisits(count);
+  }, []);
 
-      const recent = [...salonClients]
-        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-        .slice(0, 5);
-
-      setRecentClients(recent);
-
-      // Stats
-      const total = salonClients.length;
-      const rewarded = salonClients.filter(c => c.reward_claimed).length;
-
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const { data: visitLogs, error: visitsError } = await supabase
-        .from('visits_log')
-        .select('*')
-        .gte('created_at', today.toISOString())
-        .eq('action', 1);
-
-      if (visitsError) {
-        throw new Error(visitsError.message);
-      }
-
-      const todayVisits = (visitLogs ?? []).filter(log =>
-        salonClients.some(c => c.id === log.client_id)
-      ).length;
-
-      setStats({
-        total,
-        rewarded,
-        todayVisits,
-      });
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    if (!authenticated) return;
+    fetchTodayVisits();
+    const id = setInterval(fetchTodayVisits, 5000);
+    return () => clearInterval(id);
+  }, [authenticated, fetchTodayVisits]);
 
   const handleLogout = () => {
     clearOperatorSession();
     router.push('/operator/login');
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-8 h-8 border-2 border-[var(--gold-dim)] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (authChecking) return (
+    <main className="min-h-screen flex items-center justify-center">
+      <p className="text-[var(--muted)] text-sm">Se verifică sesiunea...</p>
+    </main>
+  );
+  if (!authenticated) return (
+    <main className="min-h-screen flex items-center justify-center">
+      <p className="text-[var(--muted)] text-sm">Nu ești autentificat. Redirecționare către login...</p>
+    </main>
+  );
 
   return (
     <main className="min-h-screen flex flex-col pb-24">
@@ -132,17 +141,23 @@ export default function OperatorDashboardPage() {
             <p className="text-xs text-[var(--muted)] mt-0.5">Clienți</p>
           </Link>
 
-          <div className="glass-card rounded-2xl p-4 text-center transition-all duration-200 hover:scale-[1.02] hover:brightness-110 active:scale-[0.98]">
+          <Link
+            href="/operator/activity"
+            className="glass-card rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] select-none"
+          >
             <div className="flex justify-center mb-1">
               <svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--gold-dim)]" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
               </svg>
             </div>
             <p className="font-display text-2xl font-bold text-[var(--gold)]">{stats.todayVisits}</p>
             <p className="text-xs text-[var(--muted)] mt-0.5">Vizite azi</p>
-          </div>
+          </Link>
 
-          <div className="glass-card rounded-2xl p-4 text-center transition-all duration-200 hover:scale-[1.02] hover:brightness-110 active:scale-[0.98]">
+          <button
+            onClick={() => setShowRewardConfig(prev => !prev)}
+            className="glass-card rounded-2xl p-4 text-center cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:brightness-110 active:scale-[0.98] select-none"
+          >
             <div className="flex justify-center mb-1">
               <svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--gold-dim)]" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 12 20 22 4 22 4 12"/>
@@ -154,14 +169,68 @@ export default function OperatorDashboardPage() {
             </div>
             <p className="font-display text-2xl font-bold text-[var(--gold)]">{stats.rewarded}</p>
             <p className="text-xs text-[var(--muted)] mt-0.5">Bonusuri</p>
-          </div>
+          </button>
         </div>
+
+        {/* Reward config panel */}
+        {showRewardConfig && (
+          <div className="glass-card rounded-2xl p-4 border border-[var(--gold-dim)]/30 fade-up space-y-3">
+            <div className="flex items-center justify-between">
+              <p className="text-xs uppercase tracking-widest text-[var(--muted)]">Configurare bonus</p>
+              <button
+                onClick={() => { setShowRewardConfig(false); setEditingReward(false); }}
+                className="w-6 h-6 flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] transition-colors text-lg leading-none"
+              >×</button>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-[var(--muted)]">Numele recompensei</p>
+              {editingReward ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    value={pendingRewardName}
+                    onChange={e => setPendingRewardName(e.target.value)}
+                    className="input-field px-2 py-1 rounded-lg text-sm w-40"
+                    autoFocus
+                  />
+                  <button
+                    onClick={() => {
+                      const name = pendingRewardName.trim() || rewardName;
+                      setRewardName(name);
+                      localStorage.setItem('reward_name', name);
+                      setEditingReward(false);
+                    }}
+                    className="btn-gold px-3 py-1 rounded-lg text-xs font-semibold"
+                  >Salvează</button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-semibold text-[var(--text)]">{rewardName}</p>
+                  <button
+                    onClick={() => { setPendingRewardName(rewardName); setEditingReward(true); }}
+                    className="text-[var(--muted)] hover:text-[var(--gold)] transition-colors"
+                  >
+                    <svg viewBox="0 0 24 24" className="w-3.5 h-3.5" fill="currentColor">
+                      <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/>
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-[var(--muted)]">Vizite necesare</p>
+              <p className="text-sm font-semibold text-[var(--text)]">{visitGoal}</p>
+            </div>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-[var(--muted)]">Bonusuri disponibile</p>
+              <p className="text-sm font-semibold text-[var(--gold)]">{clients.filter(c => c.visits >= visitGoal).length}</p>
+            </div>
+          </div>
+        )}
 
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-3 fade-up delay-200">
-          <Link
-            href="/operator/subscriptions"
-            className="glass-card rounded-2xl p-5 flex flex-col items-center gap-3 hover:border-[var(--gold-dim)]/40 transition-colors active:scale-95 border border-[var(--border)]"
+          <div
+            className="glass-card rounded-2xl p-5 flex flex-col items-center gap-3 border border-[var(--border)] opacity-50 cursor-not-allowed select-none relative overflow-hidden"
           >
             <div className="w-12 h-12 rounded-2xl bg-[var(--gold-dim)]/10 flex items-center justify-center">
               <svg viewBox="0 0 24 24" className="w-6 h-6 text-[var(--gold-dim)]" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
@@ -174,7 +243,8 @@ export default function OperatorDashboardPage() {
               <p className="text-sm font-semibold text-[var(--text-dim)]">Abonament</p>
               <p className="text-xs text-[var(--muted)] mt-0.5 leading-tight">Gestionează pachete preplătite</p>
             </div>
-          </Link>
+            <span className="absolute top-2 right-2 text-[10px] font-bold bg-[var(--border)] text-[var(--muted)] px-2 py-0.5 rounded-full">Curând</span>
+          </div>
 
           <Link
             href="/operator/scan-qr"
@@ -190,33 +260,6 @@ export default function OperatorDashboardPage() {
           </Link>
         </div>
 
-        {/* Recent clients */}
-        {recentClients.length > 0 && (
-          <div className="fade-up delay-300">
-            <h2 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-3">Recent Clients</h2>
-            <div className="space-y-2">
-              {recentClients.map(client => (
-                <Link
-                  key={client.id}
-                  href={`/operator/search-client?phone=${client.phone}`}
-                  className="glass-card rounded-xl p-4 flex items-center gap-3 hover:border-[var(--gold-dim)]/30 transition-colors border border-[var(--border)]"
-                >
-                  <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[var(--gold-dim)]/40 to-[var(--gold-light)]/40 flex items-center justify-center text-[var(--gold)] font-display font-bold flex-shrink-0">
-                    {client.name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-[var(--text)] truncate">{client.name}</p>
-                    <p className="text-xs text-[var(--muted)]">{client.phone}</p>
-                  </div>
-                  <div className="text-right flex-shrink-0">
-                    <p className="text-sm font-semibold text-[var(--gold)]">{client.visits}</p>
-                    <p className="text-xs text-[var(--muted)]">visits</p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
       <NavBar role="operator" />

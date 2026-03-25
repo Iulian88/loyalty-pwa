@@ -20,6 +20,8 @@ function SearchClientContent() {
   const [highlighted, setHighlighted] = useState(-1);
   const [operatorId, setOperatorId] = useState('');
   const [visitGoal, setVisitGoal] = useState(10);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -29,12 +31,14 @@ function SearchClientContent() {
     fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
-        if (data.error) { router.replace('/operator/login'); return; }
-        setOperatorId(data.operatorId || 'operator');
+        if (data.error) { setAuthChecking(false); router.replace('/operator/login'); return; }
+        setOperatorId(data.data?.operatorId || '');
         setVisitGoal(data.visitGoal || 10);
+        setAuthenticated(true);
+        setAuthChecking(false);
         loadAll(data.visitGoal || 10, searchParams.get('phone') || '');
       })
-      .catch(() => router.replace('/operator/login'));
+      .catch(() => { setAuthChecking(false); router.replace('/operator/login'); });
   }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAll = async (goal: number, initialPhone: string) => {
@@ -42,7 +46,7 @@ function SearchClientContent() {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('salon_id', '00000000-0000-0000-0000-000000000001');
+        .eq('salon_id', process.env.NEXT_PUBLIC_SALON_ID || '00000000-0000-0000-0000-000000000001');
       if (error) throw error;
       const sorted = (data || []).sort((a: Client, b: Client) => b.visits - a.visits);
       setAllClients(sorted);
@@ -134,6 +138,17 @@ function SearchClientContent() {
       setDropdownOpen(false);
     }
   };
+
+  if (authChecking) return (
+    <main className="min-h-screen flex items-center justify-center">
+      <p className="text-[var(--muted)] text-sm">Se verifică sesiunea...</p>
+    </main>
+  );
+  if (!authenticated) return (
+    <main className="min-h-screen flex items-center justify-center">
+      <p className="text-[var(--muted)] text-sm">Nu ești autentificat. Redirecționare către login...</p>
+    </main>
+  );
 
   return (
     <main className="min-h-screen flex flex-col pb-24">

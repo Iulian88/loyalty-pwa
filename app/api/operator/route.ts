@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { searchClientByPhone } from '@/lib/visits';
+import { verifyOperatorToken } from '@/lib/auth';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,6 +9,11 @@ const supabase = createClient(
 );
 
 export async function GET(req: NextRequest) {
+  const sessionToken = req.cookies.get('operator_session')?.value;
+  if (!sessionToken) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  const operatorId = verifyOperatorToken(sessionToken);
+  if (!operatorId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
   const { searchParams } = new URL(req.url);
   const phone = searchParams.get('phone');
   const salonId = searchParams.get('salon_id');

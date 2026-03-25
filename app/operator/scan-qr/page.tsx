@@ -19,19 +19,24 @@ export default function ScanQRPage() {
   const [operatorId, setOperatorId] = useState<string>('');
   const [visitGoal, setVisitGoal] = useState(0);
   const [processingScan, setProcessingScan] = useState(false);
+  const [authChecking, setAuthChecking] = useState(true);
+  const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
     fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data.error) {
+          setAuthChecking(false);
           router.replace('/operator/login');
         } else {
-          setOperatorId(data.operatorId || data?.data?.operatorId || "operator");
+          setOperatorId(data.data?.operatorId || '');
           setVisitGoal(data.visitGoal);
+          setAuthenticated(true);
+          setAuthChecking(false);
         }
       })
-      .catch(() => router.replace('/operator/login'));
+      .catch(() => { setAuthChecking(false); router.replace('/operator/login'); });
   }, [router]);
 
   const startScanner = async () => {
@@ -117,6 +122,17 @@ export default function ScanQRPage() {
       setError('Cod QR invalid sau clientul nu a fost găsit. Încearcă din nou.');
     }
   };
+
+  if (authChecking) return (
+    <main className="min-h-screen flex items-center justify-center">
+      <p className="text-[var(--muted)] text-sm">Se verifică sesiunea...</p>
+    </main>
+  );
+  if (!authenticated) return (
+    <main className="min-h-screen flex items-center justify-center">
+      <p className="text-[var(--muted)] text-sm">Nu ești autentificat. Redirecționare către login...</p>
+    </main>
+  );
 
   return (
     <main className="min-h-screen flex flex-col pb-24">
