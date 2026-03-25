@@ -87,7 +87,7 @@ export default function LoyaltyCard({ visits, name, visitGoal, bump }: Readonly<
 
       {/* Decorative logo watermark */}
       <div className="absolute top-4 right-4 opacity-5 pointer-events-none">
-        <img src="/icons/logo-mark.svg" alt="" className="w-16 h-16 object-contain" />
+        <img src="/icons/logo-mark.png" alt="" className="w-16 h-16 object-contain" />
       </div>
     </div>
   );
