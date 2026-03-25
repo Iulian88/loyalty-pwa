@@ -31,7 +31,7 @@ export default function HomePage() {
       <div className="text-center max-w-xs w-full relative z-10">
         {/* Logo */}
         <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)] flex items-center justify-center mx-auto mb-6 shadow-2xl">
-          <img src="/icons/logo-mark.svg" alt="Fidelizat" className="w-14 h-14 object-contain" />
+          <img src="/icons/logo-mark.svg" alt="Fidelizat" className="w-[72px] h-[72px] object-contain translate-y-[2px]" />
         </div>
 
         <h1 className="font-display text-4xl font-bold text-gold-shimmer mb-3">Fidelizat</h1>
