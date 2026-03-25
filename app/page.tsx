@@ -9,16 +9,15 @@ export default function HomePage() {
 
   useEffect(() => {
     fetch('/api/auth/session', { credentials: 'include', cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (!data.error) { router.replace('/dashboard'); return; }
-        return fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
-          .then(res => res.json())
-          .then(opData => {
-            if (!opData.error) router.replace('/operator/dashboard');
-          });
+      .then(res => {
+        if (res.status === 401) return null;
+        return res.json();
       })
-      .catch(() => {}); // no active session, stay on home page
+      .then(data => {
+        if (data && !data.error) router.replace('/dashboard');
+        // no session → stay on home page, do NOT check operator session
+      })
+      .catch(() => {}); // network error → stay on home page
   }, [router]);
 
   return (
