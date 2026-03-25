@@ -14,7 +14,7 @@ interface NavBarProps {
 }
 
 const LogoMarkIcon = () => (
-  <img src="/icons/logo-mark.png" alt="" className="w-5 h-5 object-contain mix-blend-screen" />
+  <img src="/icons/logo-mark.svg" alt="" className="w-6 h-6 object-contain" />
 );
 
 const QrIcon = () => (

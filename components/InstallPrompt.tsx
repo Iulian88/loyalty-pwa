@@ -66,8 +66,8 @@ export default function InstallPrompt() {
     <div className="fixed top-4 left-4 right-4 z-50 fade-up">
       <div className="glass-card rounded-2xl p-4 border border-[var(--gold-dim)]/30 shadow-2xl">
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)] flex items-center justify-center flex-shrink-0 isolate">
-            <img src="/icons/logo-mark.png" alt="" className="w-6 h-6 object-contain mix-blend-screen" />
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)] flex items-center justify-center flex-shrink-0">
+            <img src="/icons/logo-mark.svg" alt="" className="w-6 h-6 object-contain" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-[var(--text)]">Instalează aplicația</p>
