@@ -1,3 +1,4 @@
+// Fidelizat SW v2 — cache busted for new brand assets
 self.addEventListener('install', () => {
   self.skipWaiting();
 });
@@ -35,7 +36,7 @@ self.addEventListener('push', (event) => {
   };
 
   event.waitUntil(
-    self.registration.showNotification(data.title || 'Salon Loyalty', options)
+    self.registration.showNotification(data.title || 'Fidelizat', options)
   );
 });
 

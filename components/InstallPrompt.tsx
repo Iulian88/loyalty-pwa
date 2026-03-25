@@ -67,20 +67,18 @@ export default function InstallPrompt() {
       <div className="glass-card rounded-2xl p-4 border border-[var(--gold-dim)]/30 shadow-2xl">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)] flex items-center justify-center flex-shrink-0">
-            <svg viewBox="0 0 24 24" className="w-5 h-5 text-[var(--dark)]" fill="currentColor">
-              <path d="M9.64 7.64c.23-.5.36-1.05.36-1.64 0-2.21-1.79-4-4-4S2 3.79 2 6s1.79 4 4 4c.59 0 1.14-.13 1.64-.36L10 12l-2.36 2.36C7.14 14.13 6.59 14 6 14c-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4c0-.59-.13-1.14-.36-1.64L12 14l7 7h3v-1L9.64 7.64zM19 3l-6 6 2 2 7-7V3z"/>
-            </svg>
+            <img src="/icons/logo-mark.svg" alt="" className="w-5 h-5 object-contain" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-[var(--text)]">Add to Home Screen</p>
+            <p className="text-sm font-semibold text-[var(--text)]">Instalează aplicația</p>
             {isIOS ? (
               <p className="text-xs text-[var(--muted)] mt-0.5">
-                Tap <strong className="text-[var(--text-dim)]">Share</strong> then{' '}
+                Apasă <strong className="text-[var(--text-dim)]">Share</strong> apoi{' '}
                 <strong className="text-[var(--text-dim)]">Add to Home Screen</strong>
               </p>
             ) : (
               <p className="text-xs text-[var(--muted)] mt-0.5">
-                Install for quick access, no App Store needed
+                Acces rapid, fără App Store
               </p>
             )}
           </div>

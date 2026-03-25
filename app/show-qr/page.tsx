@@ -99,9 +99,9 @@ export default function ShowQRPage() {
 
       {/* Header */}
       <header className="p-6 pt-8 fade-up">
-        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">Your</p>
-        <h1 className="font-display text-3xl font-bold text-[var(--text)]">Loyalty QR</h1>
-        <p className="text-sm text-[var(--muted)] mt-1">Show this to your stylist to record your visit</p>
+        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">Codul tău</p>
+        <h1 className="font-display text-3xl font-bold text-[var(--text)]">Cod fidelitate</h1>
+        <p className="text-sm text-[var(--muted)] mt-1">Arată codul operatorului pentru a înregistra vizita</p>
       </header>
 
       {/* QR Code Card */}
@@ -127,7 +127,7 @@ export default function ShowQRPage() {
 
                 <img
                   src={qrDataUrl}
-                  alt="Loyalty QR Code"
+                  alt="Cod QR fidelitate"
                   className="w-56 h-56 rounded-xl"
                 />
               </div>

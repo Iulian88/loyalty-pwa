@@ -65,19 +65,19 @@ export default function RegisterPage() {
         <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
         </svg>
-        Back
+        Înapoi
       </Link>
 
       <div className="flex-1 flex flex-col justify-center max-w-xs mx-auto w-full">
         <div className="mb-8 fade-up">
-          <h1 className="font-display text-3xl font-bold text-[var(--text)]">Join Our Loyalty Program</h1>
-          <p className="text-[var(--muted)] text-sm mt-1">Create your free account</p>
+          <h1 className="font-display text-3xl font-bold text-[var(--text)]">Intră în programul de fidelizare</h1>
+          <p className="text-[var(--muted)] text-sm mt-1">Creează contul tău gratuit</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 fade-up delay-100">
           <div>
             <label htmlFor="name" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
-              Full Name
+              Nume complet
             </label>
             <input
               id="name"
@@ -85,14 +85,14 @@ export default function RegisterPage() {
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="input-field w-full px-4 py-3 rounded-xl text-base"
-              placeholder="Enter your full name"
+              placeholder="Introdu numele tău"
               required
             />
           </div>
 
           <div>
             <label htmlFor="phone" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
-              Phone Number
+              Număr de telefon
             </label>
             <input
               id="phone"
@@ -100,14 +100,14 @@ export default function RegisterPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="input-field w-full px-4 py-3 rounded-xl text-base"
-              placeholder="Enter your phone number"
+              placeholder="Introdu numărul tău"
               required
             />
           </div>
 
           <div>
             <label htmlFor="pin" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
-              PIN <span className="normal-case tracking-normal text-[var(--muted)]">(optional, 4 digits)</span>
+              PIN <span className="normal-case tracking-normal text-[var(--muted)]">(opțional, 4 cifre)</span>
             </label>
             <input
               id="pin"
@@ -124,7 +124,7 @@ export default function RegisterPage() {
 
           <div>
             <label htmlFor="confirmPin" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
-              Confirm PIN
+              Confirmă PIN
             </label>
             <input
               id="confirmPin"
@@ -150,14 +150,14 @@ export default function RegisterPage() {
             disabled={loading}
             className="btn-gold w-full py-4 rounded-2xl text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Creating account…' : 'Create Account'}
+            {loading ? 'Se creează contul…' : 'Creează cont'}
           </button>
         </form>
 
         <p className="mt-8 pt-6 border-t border-[var(--border)] text-[var(--muted)] text-center text-sm fade-up delay-200">
-          Already have an account?{' '}
+          Ai deja cont?{' '}
           <Link href="/login" className="text-[var(--gold-dim)] hover:text-[var(--gold)] transition-colors">
-            Sign in
+            Conectează-te
           </Link>
         </p>
       </div>

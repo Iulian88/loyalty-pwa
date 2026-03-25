@@ -1,7 +1,7 @@
 {
-  "name": "Salon Loyalty",
-  "short_name": "Loyalty",
-  "description": "Collect visits and earn rewards at your favourite hair salon",
+  "name": "Fidelizat",
+  "short_name": "Fidelizat",
+  "description": "Fidelizează clienții și oferă recompense",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0a0a",

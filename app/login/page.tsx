@@ -14,7 +14,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!phone.trim()) {
-      setError('Please enter your phone number.');
+      setError('Te rugăm introduci numărul de telefon.');
       return;
     }
 
@@ -30,8 +30,8 @@ export default function LoginPage() {
       });
       if (!res.ok) {
         const { error } = await res.json();
-        if (error === 'PIN required') throw new Error('Please enter your PIN.');
-        if (error === 'Invalid PIN') throw new Error('Invalid PIN. Please try again.');
+        if (error === 'PIN required') throw new Error('Te rugăm introduci PIN-ul.');
+        if (error === 'Invalid PIN') throw new Error('PIN incorect. Încearcă din nou.');
         throw new Error(error);
       }
       router.push('/dashboard');
@@ -53,19 +53,19 @@ export default function LoginPage() {
         <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
           <path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/>
         </svg>
-        Back
+        Înapoi
       </Link>
 
       <div className="flex-1 flex flex-col justify-center max-w-xs mx-auto w-full">
         <div className="mb-8 fade-up">
-          <h1 className="font-display text-3xl font-bold text-[var(--text)]">Welcome Back</h1>
-          <p className="text-[var(--muted)] text-sm mt-1">Sign in with your phone number</p>
+          <h1 className="font-display text-3xl font-bold text-[var(--text)]">Bună revenire</h1>
+          <p className="text-[var(--muted)] text-sm mt-1">Conectează-te cu numărul de telefon</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 fade-up delay-100">
           <div>
             <label htmlFor="phone" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
-              Phone Number
+              Număr de telefon
             </label>
             <input
               id="phone"
@@ -73,14 +73,14 @@ export default function LoginPage() {
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               className="input-field w-full px-4 py-3 rounded-xl text-base"
-              placeholder="Enter your phone number"
+              placeholder="Introdu numărul tău"
               required
             />
           </div>
 
           <div>
             <label htmlFor="pin" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">
-              PIN <span className="normal-case tracking-normal text-[var(--muted)]">(if set)</span>
+              PIN <span className="normal-case tracking-normal text-[var(--muted)]">(dacă e setat)</span>
             </label>
             <input
               id="pin"
@@ -104,14 +104,14 @@ export default function LoginPage() {
             disabled={loading}
             className="btn-gold w-full py-4 rounded-2xl text-base font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {loading ? 'Signing in…' : 'Sign In'}
+            {loading ? 'Se conectează…' : 'Conectează-te'}
           </button>
         </form>
 
         <p className="mt-8 pt-6 border-t border-[var(--border)] text-[var(--muted)] text-center text-sm fade-up delay-200">
-          New here?{' '}
+          Eşti nou?{' '}
           <Link href="/register" className="text-[var(--gold-dim)] hover:text-[var(--gold)] transition-colors">
-            Create account
+            Creează cont
           </Link>
         </p>
       </div>

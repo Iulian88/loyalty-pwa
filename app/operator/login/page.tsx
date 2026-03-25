@@ -59,7 +59,7 @@ export default function OperatorLoginPage() {
           </div>
           <p className="text-xs uppercase tracking-widest text-[var(--gold-dim)] mb-2">Operator</p>
           <h1 className="font-display text-3xl font-bold text-[var(--text)]">Dashboard Access</h1>
-          <p className="text-[var(--muted)] text-sm mt-1">Salon staff only</p>
+          <p className="text-[var(--muted)] text-sm mt-1">Doar pentru operatori</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 fade-up delay-100">
