@@ -17,17 +17,19 @@ export default function ShowQRPage() {
   const [toast, setToast] = useState('');
 
   useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          router.replace('/login');
-        } else {
-          setClient(data.client);
-          prevVisitsRef.current = data.client.visits;
-        }
+    let mounted = true;
+    fetch('/api/auth/session', { credentials: 'include', cache: 'no-store' })
+      .then(res => {
+        if (!res.ok) { router.replace('/login'); return null; }
+        return res.json();
       })
-      .catch(() => router.replace('/login'));
+      .then(data => {
+        if (!mounted || !data) return;
+        setClient(data.client);
+        prevVisitsRef.current = data.client.visits;
+      })
+      .catch(() => { if (mounted) router.replace('/login'); });
+    return () => { mounted = false; };
   }, [router]);
 
   useEffect(() => {

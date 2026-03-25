@@ -32,15 +32,20 @@ export default function SubscriptionsPage() {
 
   // Auth + load all clients
   useEffect(() => {
+    let mounted = true;
     fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) { if (mounted) { setAuthChecking(false); router.replace('/operator/login'); } return null; }
+        return res.json();
+      })
       .then(data => {
-        if (data.error) { setAuthChecking(false); router.replace('/operator/login'); return; }
+        if (!mounted || !data) return;
         setAuthenticated(true);
         setAuthChecking(false);
         loadClients();
       })
-      .catch(() => { setAuthChecking(false); router.replace('/operator/login'); });
+      .catch(() => { if (mounted) { setAuthChecking(false); router.replace('/operator/login'); } });
+    return () => { mounted = false; };
   }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadClients = async () => {

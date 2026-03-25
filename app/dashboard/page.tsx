@@ -22,19 +22,21 @@ export default function DashboardPage() {
   const [cardBump, setCardBump] = useState(false);
 
   useEffect(() => {
-    fetch('/api/auth/session')
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          router.replace('/login');
-        } else {
-          setClient(data.client);
-          setVisitGoal(data.visitGoal);
-          prevVisitsRef.current = data.client.visits;
-        }
+    let mounted = true;
+    fetch('/api/auth/session', { credentials: 'include', cache: 'no-store' })
+      .then(res => {
+        if (!res.ok) { router.replace('/login'); return null; }
+        return res.json();
       })
-      .catch(() => router.replace('/login'))
-      .finally(() => setLoading(false));
+      .then(data => {
+        if (!mounted || !data) return;
+        setClient(data.client);
+        setVisitGoal(data.visitGoal);
+        prevVisitsRef.current = data.client.visits;
+      })
+      .catch(() => { if (mounted) router.replace('/login'); })
+      .finally(() => { if (mounted) setLoading(false); });
+    return () => { mounted = false; };
   }, [router]);
 
   useEffect(() => {

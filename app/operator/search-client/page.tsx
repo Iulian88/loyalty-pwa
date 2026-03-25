@@ -28,17 +28,22 @@ function SearchClientContent() {
 
   // Auth check + load all clients once
   useEffect(() => {
+    let mounted = true;
     fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) { if (mounted) { setAuthChecking(false); router.replace('/operator/login'); } return null; }
+        return res.json();
+      })
       .then(data => {
-        if (data.error) { setAuthChecking(false); router.replace('/operator/login'); return; }
+        if (!mounted || !data) return;
         setOperatorId(data.data?.operatorId || '');
         setVisitGoal(data.visitGoal || 10);
         setAuthenticated(true);
         setAuthChecking(false);
         loadAll(data.visitGoal || 10, searchParams.get('phone') || '');
       })
-      .catch(() => { setAuthChecking(false); router.replace('/operator/login'); });
+      .catch(() => { if (mounted) { setAuthChecking(false); router.replace('/operator/login'); } });
+    return () => { mounted = false; };
   }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadAll = async (goal: number, initialPhone: string) => {

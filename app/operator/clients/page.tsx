@@ -25,10 +25,14 @@ export default function ClientsPage() {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
 
   useEffect(() => {
+    let mounted = true;
     fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) { if (mounted) { router.replace('/operator/login'); } return null; }
+        return res.json();
+      })
       .then(async data => {
-        if (data.error) { router.replace('/operator/login'); return; }
+        if (!mounted || !data) return;
         const vg: number = data.visitGoal ?? 10;
         setVisitGoal(vg);
         setOperatorId(data.data?.operatorId || '');
@@ -36,10 +40,11 @@ export default function ClientsPage() {
           .from('clients')
           .select('*')
           .eq('salon_id', SALON_ID);
-        if (clientsData) setClients(clientsData as Client[]);
-        setLoading(false);
+        if (mounted && clientsData) setClients(clientsData as Client[]);
+        if (mounted) setLoading(false);
       })
-      .catch(() => router.replace('/operator/login'));
+      .catch(() => { if (mounted) router.replace('/operator/login'); });
+    return () => { mounted = false; };
   }, [router]);
 
   const showToast = (msg: string) => {

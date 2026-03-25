@@ -23,20 +23,21 @@ export default function ScanQRPage() {
   const [authenticated, setAuthenticated] = useState(false);
 
   useEffect(() => {
+    let mounted = true;
     fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
-      .then(res => res.json())
-      .then(data => {
-        if (data.error) {
-          setAuthChecking(false);
-          router.replace('/operator/login');
-        } else {
-          setOperatorId(data.data?.operatorId || '');
-          setVisitGoal(data.visitGoal);
-          setAuthenticated(true);
-          setAuthChecking(false);
-        }
+      .then(res => {
+        if (!res.ok) { if (mounted) { setAuthChecking(false); router.replace('/operator/login'); } return null; }
+        return res.json();
       })
-      .catch(() => { setAuthChecking(false); router.replace('/operator/login'); });
+      .then(data => {
+        if (!mounted || !data) return;
+        setOperatorId(data.data?.operatorId || '');
+        setVisitGoal(data.visitGoal);
+        setAuthenticated(true);
+        setAuthChecking(false);
+      })
+      .catch(() => { if (mounted) { setAuthChecking(false); router.replace('/operator/login'); } });
+    return () => { mounted = false; };
   }, [router]);
 
   const startScanner = async () => {

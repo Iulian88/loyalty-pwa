@@ -38,10 +38,14 @@ export default function ActivityPage() {
   const [todayCount, setTodayCount] = useState(0);
 
   useEffect(() => {
+    let mounted = true;
     fetch('/api/operator/session', { credentials: 'include', cache: 'no-store' })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) { if (mounted) { router.replace('/operator/login'); } return null; }
+        return res.json();
+      })
       .then(async data => {
-        if (data.error) { router.replace('/operator/login'); return; }
+        if (!mounted || !data) return;
 
         const { data: logs } = await supabase
           .from('visits_log')
@@ -49,15 +53,16 @@ export default function ActivityPage() {
           .order('created_at', { ascending: false })
           .limit(60);
 
-        if (logs) {
+        if (mounted && logs) {
           const typedLogs = logs as unknown as VisitEvent[];
           setEvents(typedLogs);
           const todayStr = new Date().toDateString();
           setTodayCount(typedLogs.filter(e => e.action === 1 && new Date(e.created_at).toDateString() === todayStr).length);
         }
-        setLoading(false);
+        if (mounted) setLoading(false);
       })
-      .catch(() => router.replace('/operator/login'));
+      .catch(() => { if (mounted) router.replace('/operator/login'); });
+    return () => { mounted = false; };
   }, [router]);
 
   // Group events by date
