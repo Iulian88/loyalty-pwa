@@ -58,7 +58,7 @@ export default function LoginPage() {
 
       <div className="flex-1 flex flex-col justify-center max-w-xs mx-auto w-full">
         <div className="mb-8 fade-up">
-          <h1 className="font-display text-3xl font-bold text-[var(--text)]">Bună revenire</h1>
+          <h1 className="font-display text-3xl font-bold text-[var(--text)]">Bine ai revenit</h1>
           <p className="text-[var(--muted)] text-sm mt-1">Conectează-te cu numărul de telefon</p>
         </div>
 

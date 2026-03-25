@@ -23,7 +23,7 @@ export default function LoyaltyCard({ visits, name, visitGoal, bump }: Readonly<
   const progress = visitGoal > 0 ? Math.min((visits / visitGoal) * 100, 100) : 0;
 
   return (
-    <div className={`glass-card rounded-2xl p-6 w-full max-w-sm mx-auto ${isComplete ? 'reward-glow' : ''} ${bump ? 'card-bump' : ''}`}>
+    <div className={`glass-card relative overflow-hidden rounded-2xl p-6 w-full max-w-sm mx-auto ${isComplete ? 'reward-glow' : ''} ${bump ? 'card-bump' : ''}`}>
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
@@ -86,8 +86,8 @@ export default function LoyaltyCard({ visits, name, visitGoal, bump }: Readonly<
       </div>
 
       {/* Decorative logo watermark */}
-      <div className="absolute top-4 right-4 opacity-5 pointer-events-none">
-        <img src="/icons/logo-mark.png" alt="" className="w-16 h-16 object-contain" />
+      <div className="absolute -top-4 -right-4 opacity-[0.06] pointer-events-none">
+        <img src="/icons/logo-mark.png" alt="" className="w-40 h-40 object-contain mix-blend-screen" />
       </div>
     </div>
   );

@@ -30,8 +30,8 @@ export default function HomePage() {
 
       <div className="text-center max-w-xs w-full relative z-10">
         {/* Logo */}
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)] flex items-center justify-center mx-auto mb-6 shadow-2xl">
-          <img src="/icons/logo-mark.png" alt="Fidelizat" className="w-10 h-10 object-contain" />
+        <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-[var(--gold-dim)] to-[var(--gold-light)] flex items-center justify-center mx-auto mb-6 shadow-2xl isolate">
+          <img src="/icons/logo-mark.png" alt="Fidelizat" className="w-16 h-16 object-contain mix-blend-screen" />
         </div>
 
         <h1 className="font-display text-4xl font-bold text-gold-shimmer mb-3">Fidelizat</h1>

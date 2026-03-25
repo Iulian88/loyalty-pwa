@@ -16,19 +16,19 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim() || !phone.trim()) {
-      setError('Please fill in all fields.');
+      setError('Completează toate câmpurile.');
       return;
     }
     if (phone.replace(/\D/g, '').length < 9) {
-      setError('Please enter a valid phone number.');
+      setError('Introdu un număr de telefon valid.');
       return;
     }
     if (pin && !/^\d{4,}$/.test(pin)) {
-      setError('PIN must be at least 4 digits.');
+      setError('PIN-ul trebuie să aibă minim 4 cifre.');
       return;
     }
     if (pin !== confirmPin) {
-      setError('PINs do not match.');
+      setError('PIN-urile nu se potrivesc.');
       return;
     }
 
@@ -48,7 +48,7 @@ export default function RegisterPage() {
       }
       router.push('/dashboard');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Registration failed.');
+      setError(e instanceof Error ? e.message : 'Înregistrare eșuată. Încearcă din nou.');
     } finally {
       setLoading(false);
     }
