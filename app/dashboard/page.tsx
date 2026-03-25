@@ -49,9 +49,15 @@ export default function DashboardPage() {
     if (!client) return;
     const interval = setInterval(() => {
       fetch('/api/auth/session')
-        .then(res => res.json())
+        .then(res => {
+          if (res.status === 401) {
+            clearInterval(interval);
+            return null;
+          }
+          return res.json();
+        })
         .then(data => {
-          if (data.error) return;
+          if (!data || data.error) return;
           const newVisits = data.client.visits;
           if (prevVisitsRef.current !== null && newVisits > prevVisitsRef.current) {
             if (toastTimerRef.current) clearTimeout(toastTimerRef.current);

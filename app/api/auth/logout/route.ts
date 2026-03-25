@@ -9,5 +9,12 @@ export async function POST() {
     path: '/',
     maxAge: 0,
   });
+  response.cookies.set('operator_session', '', {
+    httpOnly: true,
+    secure: true,
+    sameSite: 'lax',
+    path: '/',
+    maxAge: 0,
+  });
   return response;
 }

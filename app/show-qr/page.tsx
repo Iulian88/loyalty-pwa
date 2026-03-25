@@ -56,9 +56,15 @@ export default function ShowQRPage() {
     if (!client) return;
     intervalRef.current = setInterval(() => {
       fetch('/api/auth/session')
-        .then(res => res.json())
+        .then(res => {
+          if (res.status === 401) {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            return null;
+          }
+          return res.json();
+        })
         .then(data => {
-          if (data.error) return;
+          if (!data || data.error) return;
           const newVisits = data.client.visits;
           if (prevVisitsRef.current !== null && newVisits > prevVisitsRef.current) {
             if (intervalRef.current) clearInterval(intervalRef.current);
