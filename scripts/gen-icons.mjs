@@ -1,70 +1,87 @@
 import sharp from 'sharp';
-import { readFileSync, writeFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { writeFileSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const src = resolve(__dirname, '../public/icons/logo-mark.svg');
 
-// logo-mark.svg is actually a JPEG (misnamed) — sharp handles both
-const input = readFileSync(src);
+const BLACK = { r: 0, g: 0, b: 0, alpha: 1 };
+const FILL_RATIO = 0.72;
+const BRIGHT_THRESHOLD = 35; // min RGB brightness to count as logo content
 
-async function generate() {
-  const DARK_BG = { r: 11, g: 11, b: 12, alpha: 1 };
+// Step 1: render SVG → flatten to black → scan for logo bounding box
+async function getLogoBbox() {
+  const RENDER_W = 1200; // render resolution for scanning
+  const meta = await sharp(src, { density: 72 }).metadata();
+  const density = Math.round(72 * RENDER_W / (meta.width || 422));
 
-  // Helper: resize + composite on dark background
-  async function makeIcon(size, padding) {
-    const inner = Math.round(size - padding * 2);
-    const resized = await sharp(input)
-      .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
-      .png()
-      .toBuffer();
+  const pngBuf = await sharp(src, { density })
+    .flatten({ background: BLACK })
+    .png()
+    .toBuffer();
 
-    return sharp({
-      create: { width: size, height: size, channels: 4, background: { ...DARK_BG } },
-    })
-      .composite([{ input: resized, gravity: 'center' }])
-      .png()
-      .toBuffer();
+  const { data, info } = await sharp(pngBuf).raw().toBuffer({ resolveWithObject: true });
+  const { width, height, channels } = info;
+
+  let minX = width, maxX = 0, minY = height, maxY = 0;
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * channels;
+      const bright = (data[i] + data[i + 1] + data[i + 2]) / 3;
+      if (bright > BRIGHT_THRESHOLD) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
   }
 
-  // 192×192
-  const i192 = await makeIcon(192, 20);
-  writeFileSync(resolve(__dirname, '../public/icons/icon-192.png'), i192);
-  console.log('✓ icon-192.png');
+  console.log(`Rendered: ${width}x${height} | Logo bbox: (${minX},${minY})-(${maxX},${maxY}) = ${maxX - minX}x${maxY - minY}`);
+  console.log(`Center: (${Math.round((minX + maxX) / 2)}, ${Math.round((minY + maxY) / 2)})`);
 
-  // 512×512
-  const i512 = await makeIcon(512, 48);
-  writeFileSync(resolve(__dirname, '../public/icons/icon-512.png'), i512);
-  console.log('✓ icon-512.png');
+  return { pngBuf, width, height, minX, maxX, minY, maxY };
+}
 
-  // apple-touch-icon 180×180
-  const apple = await makeIcon(180, 18);
-  writeFileSync(resolve(__dirname, '../public/icons/apple-touch-icon.png'), apple);
-  console.log('✓ apple-touch-icon.png');
+// Step 2: extract exact square centred on logo, resize, place on black canvas
+async function makeIcon(size, outPath, bbox) {
+  const { pngBuf, width, height, minX, maxX, minY, maxY } = bbox;
 
-  // favicon 32×32 (PNG, linked as rel="icon")
-  const fav32 = await makeIcon(32, 3);
-  writeFileSync(resolve(__dirname, '../public/favicon-32.png'), fav32);
-  console.log('✓ favicon-32.png');
+  const logoW = maxX - minX + 1;
+  const logoH = maxY - minY + 1;
+  const cx = Math.round((minX + maxX) / 2);
+  const cy = Math.round((minY + maxY) / 2);
 
-  // og-image 1200×630 — centered logo ~280px on dark bg
-  const logoSize = 280;
-  const ogLogo = await sharp(input)
-    .resize(logoSize, logoSize, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+  // Square crop sized so logo fills FILL_RATIO of the crop
+  const cropPx = Math.round(Math.max(logoW, logoH) / FILL_RATIO);
+  const half = Math.round(cropPx / 2);
+
+  // Extend source image on all sides so the centred crop never goes out of bounds
+  const pad = half + 4;
+  const extBuf = await sharp(pngBuf)
+    .extend({ top: pad, bottom: pad, left: pad, right: pad, background: BLACK })
     .png()
     .toBuffer();
 
-  const ogImg = await sharp({
-    create: { width: 1200, height: 630, channels: 4, background: { r: 11, g: 11, b: 12, alpha: 1 } },
-  })
-    .composite([{ input: ogLogo, gravity: 'center' }])
+  // cx/cy shift by pad in extended image; extract square centred on logo
+  const buf = await sharp(extBuf)
+    .extract({ left: (cx + pad) - half, top: (cy + pad) - half, width: cropPx, height: cropPx })
+    .resize(size, size, { fit: 'fill' }) // already square, no distortion
+    .flatten({ background: BLACK })
     .png()
     .toBuffer();
-  writeFileSync(resolve(__dirname, '../public/og-image.png'), ogImg);
-  console.log('✓ og-image.png');
 
-  console.log('\nAll assets generated.');
+  writeFileSync(outPath, buf);
+  console.log(`✓ ${outPath.split('/').pop()} (${size}x${size})`);
+}
+
+async function generate() {
+  const bbox = await getLogoBbox();
+  await makeIcon(192, resolve(__dirname, '../public/icons/icon-192.png'), bbox);
+  await makeIcon(512, resolve(__dirname, '../public/icons/icon-512.png'), bbox);
+  await makeIcon(180, resolve(__dirname, '../public/icons/apple-touch-icon.png'), bbox);
+  console.log('\nAll icons generated — perfectly centred on black canvas.');
 }
 
 generate().catch(e => { console.error(e); process.exit(1); });
