@@ -22,6 +22,7 @@ export default function DashboardPage() {
   const [cardBump, setCardBump] = useState(false);
   const [cards, setCards] = useState<Client[]>([]);
   const [activeCard, setActiveCard] = useState<Client | null>(null);
+  const [businessNames, setBusinessNames] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let mounted = true;
@@ -36,14 +37,21 @@ export default function DashboardPage() {
         setActiveCard(data.client);
         setVisitGoal(data.visitGoal);
         prevVisitsRef.current = data.client.visits;
-        fetch('/api/my-cards', { credentials: 'include', cache: 'no-store' })
-          .then(r => r.ok ? r.json() : null)
-          .then(cardsData => {
-            if (!mounted || !cardsData?.cards) return;
+        Promise.all([
+          fetch('/api/my-cards', { credentials: 'include', cache: 'no-store' }).then(r => r.ok ? r.json() : null),
+          fetch('/api/businesses', { credentials: 'include', cache: 'no-store' }).then(r => r.ok ? r.json() : null),
+        ]).then(([cardsData, bizData]) => {
+          if (!mounted) return;
+          if (cardsData?.cards) {
             setCards(cardsData.cards);
             if (cardsData.cards.length > 0) setActiveCard(cardsData.cards[0]);
-          })
-          .catch(() => {});
+          }
+          if (bizData?.businesses) {
+            const map: Record<string, string> = {};
+            for (const b of bizData.businesses) map[b.id] = b.name;
+            setBusinessNames(map);
+          }
+        }).catch(() => {});
       })
       .catch(() => { if (mounted) router.replace('/login'); })
       .finally(() => { if (mounted) setLoading(false); });
@@ -139,6 +147,28 @@ export default function DashboardPage() {
 
       {/* Content */}
       <div className="flex-1 px-6 space-y-5">
+        {/* Card Selector */}
+        {cards.length > 1 && (
+          <div className="flex gap-2 overflow-x-auto pb-1 fade-up">
+            {cards.map(card => (
+              <button
+                key={card.id}
+                onClick={() => setActiveCard(card)}
+                className={`flex-shrink-0 px-3 py-2 rounded-xl border text-sm transition-colors ${
+                  activeCard?.id === card.id
+                    ? 'border-[var(--gold-dim)] bg-[var(--gold-dim)]/10 text-[var(--gold)]'
+                    : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
+                }`}
+              >
+                <span className="block font-medium leading-tight">
+                  {businessNames[card.business_id] ?? card.business_id.slice(0, 8)}
+                </span>
+                <span className="block text-xs opacity-70">{card.visits} vizite</span>
+              </button>
+            ))}
+          </div>
+        )}
+
         {/* Loyalty Card */}
         <div className="relative fade-up delay-100">
           <LoyaltyCard visits={activeCard.visits} name={activeCard.name} visitGoal={visitGoal} bump={cardBump} />
