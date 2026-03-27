@@ -15,6 +15,8 @@ export default function ShowQRPage() {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const [toast, setToast] = useState('');
+  const [cards, setCards] = useState<Client[]>([]);
+  const [activeCard, setActiveCard] = useState<Client | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -26,16 +28,25 @@ export default function ShowQRPage() {
       .then(data => {
         if (!mounted || !data) return;
         setClient(data.client);
+        setActiveCard(data.client);
         prevVisitsRef.current = data.client.visits;
+        fetch('/api/my-cards', { credentials: 'include', cache: 'no-store' })
+          .then(r => r.ok ? r.json() : null)
+          .then(cardsData => {
+            if (!mounted || !cardsData?.cards) return;
+            setCards(cardsData.cards);
+            if (cardsData.cards.length > 0) setActiveCard(cardsData.cards[0]);
+          })
+          .catch(() => {});
       })
       .catch(() => { if (mounted) router.replace('/login'); });
     return () => { mounted = false; };
   }, [router]);
 
   useEffect(() => {
-    if (!client) return;
+    if (!activeCard) return;
 
-    const qrUrl = `loyaltyapp/client/${client.id}`;
+    const qrUrl = `loyaltyapp/client/${activeCard.id}`;
 
     // Dynamically import qrcode to avoid SSR issues
     import('qrcode').then(QRCode => {
@@ -52,7 +63,7 @@ export default function ShowQRPage() {
         setLoading(false);
       });
     });
-  }, [client]);
+  }, [activeCard]);
 
   useEffect(() => {
     if (!client) return;
@@ -76,6 +87,7 @@ export default function ShowQRPage() {
           }
           prevVisitsRef.current = newVisits;
           setClient(data.client);
+          setActiveCard(prev => prev?.id === data.client.id ? data.client : prev);
         })
         .catch(() => {});
     }, 3000);
@@ -85,7 +97,7 @@ export default function ShowQRPage() {
     };
   }, [client?.id, router]);
 
-  if (!client) return null;
+  if (!client || !activeCard) return null;
 
   return (
     <main className="min-h-screen flex flex-col pb-24">
@@ -108,8 +120,8 @@ export default function ShowQRPage() {
       <div className="flex-1 flex flex-col items-center justify-center px-6">
         <div className="glass-card rounded-3xl p-8 w-full max-w-xs text-center fade-up delay-100">
           {/* Name */}
-          <p className="font-display text-xl font-semibold text-[var(--text)] mb-1">{client.name}</p>
-          <p className="text-sm text-[var(--muted)] mb-6">{client.phone}</p>
+          <p className="font-display text-xl font-semibold text-[var(--text)] mb-1">{activeCard.name}</p>
+          <p className="text-sm text-[var(--muted)] mb-6">{activeCard.phone}</p>
 
           {/* QR Code */}
           <div className="relative inline-block">
@@ -137,7 +149,7 @@ export default function ShowQRPage() {
           {/* Client ID snippet */}
           <div className="mt-6 bg-[#111] rounded-xl px-4 py-2 border border-[var(--border)]">
             <p className="text-xs text-[var(--muted)] font-mono break-all">
-              ID: {client.id.slice(0, 8)}…
+              ID: {activeCard.id.slice(0, 8)}…
             </p>
           </div>
         </div>

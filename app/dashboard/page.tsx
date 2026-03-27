@@ -20,6 +20,8 @@ export default function DashboardPage() {
   const bumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState('');
   const [cardBump, setCardBump] = useState(false);
+  const [cards, setCards] = useState<Client[]>([]);
+  const [activeCard, setActiveCard] = useState<Client | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -31,8 +33,17 @@ export default function DashboardPage() {
       .then(data => {
         if (!mounted || !data) return;
         setClient(data.client);
+        setActiveCard(data.client);
         setVisitGoal(data.visitGoal);
         prevVisitsRef.current = data.client.visits;
+        fetch('/api/my-cards', { credentials: 'include', cache: 'no-store' })
+          .then(r => r.ok ? r.json() : null)
+          .then(cardsData => {
+            if (!mounted || !cardsData?.cards) return;
+            setCards(cardsData.cards);
+            if (cardsData.cards.length > 0) setActiveCard(cardsData.cards[0]);
+          })
+          .catch(() => {});
       })
       .catch(() => { if (mounted) router.replace('/login'); })
       .finally(() => { if (mounted) setLoading(false); });
@@ -40,12 +51,12 @@ export default function DashboardPage() {
   }, [router]);
 
   useEffect(() => {
-    if (!client) return;
-    fetch(`/api/visits/${client.id}`)
+    if (!activeCard) return;
+    fetch(`/api/visits/${activeCard.id}`)
       .then(res => res.json())
       .then(data => { if (data.history) setVisitHistory(data.history); })
       .catch(() => {});
-  }, [client]);
+  }, [activeCard?.id]);
 
   useEffect(() => {
     if (!client) return;
@@ -71,6 +82,7 @@ export default function DashboardPage() {
           }
           prevVisitsRef.current = newVisits;
           setClient(data.client);
+          setActiveCard(prev => prev?.id === data.client.id ? data.client : prev);
           setVisitGoal(data.visitGoal);
         })
         .catch(() => {});
@@ -95,9 +107,9 @@ export default function DashboardPage() {
     );
   }
 
-  if (!client) return null;
+  if (!client || !activeCard) return null;
 
-  const isComplete = client.visits >= visitGoal;
+  const isComplete = activeCard.visits >= visitGoal;
 
   return (
     <main className="min-h-screen flex flex-col pb-24">
@@ -113,7 +125,7 @@ export default function DashboardPage() {
       <header className="flex items-center justify-between p-6 pt-8">
         <div className="fade-up">
           <p className="text-xs uppercase tracking-widest text-[var(--muted)]">Bună ziua,</p>
-          <h1 className="font-display text-2xl font-semibold text-[var(--text)]">{client.name.split(' ')[0]}</h1>
+          <h1 className="font-display text-2xl font-semibold text-[var(--text)]">{activeCard.name.split(' ')[0]}</h1>
         </div>
         <button
           onClick={handleLogout}
@@ -129,7 +141,7 @@ export default function DashboardPage() {
       <div className="flex-1 px-6 space-y-5">
         {/* Loyalty Card */}
         <div className="relative fade-up delay-100">
-          <LoyaltyCard visits={client.visits} name={client.name} visitGoal={visitGoal} bump={cardBump} />
+          <LoyaltyCard visits={activeCard.visits} name={activeCard.name} visitGoal={visitGoal} bump={cardBump} />
         </div>
 
         {/* Reward Banner */}
@@ -166,7 +178,7 @@ export default function DashboardPage() {
               </svg>
             </div>
             <span className="text-sm font-medium text-[var(--text-dim)]">
-              {visitGoal - client.visits > 0 ? `Mai ai ${visitGoal - client.visits}` : 'Finalizat!'}
+              {visitGoal - activeCard.visits > 0 ? `Mai ai ${visitGoal - activeCard.visits}` : 'Finalizat!'}
             </span>
           </div>
         </div>
@@ -176,18 +188,18 @@ export default function DashboardPage() {
           <h3 className="text-xs uppercase tracking-widest text-[var(--muted)] mb-4">Statistici</h3>
           <div className="grid grid-cols-3 gap-4">
             <div className="text-center">
-              <p className="font-display text-2xl font-bold text-[var(--gold)]">{client.visits}</p>
+              <p className="font-display text-2xl font-bold text-[var(--gold)]">{activeCard.visits}</p>
               <p className="text-xs text-[var(--muted)] mt-1">Vizite</p>
             </div>
             <div className="text-center border-x border-[var(--border)]">
               <p className="font-display text-2xl font-bold text-[var(--text)]">
-                {client.reward_claimed ? '1' : '0'}
+                {activeCard.reward_claimed ? '1' : '0'}
               </p>
               <p className="text-xs text-[var(--muted)] mt-1">Bonusuri</p>
             </div>
             <div className="text-center">
               <p className="font-display text-2xl font-bold text-[var(--text-dim)]">
-                {Math.max(visitGoal - client.visits, 0)}
+                {Math.max(visitGoal - activeCard.visits, 0)}
               </p>
               <p className="text-xs text-[var(--muted)] mt-1">Rămase</p>
             </div>
