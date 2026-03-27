@@ -2,10 +2,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Client } from '@/types';
 
-const SALON_ID = process.env.NEXT_PUBLIC_SALON_ID || '00000000-0000-0000-0000-000000000001';
+const DEFAULT_BUSINESS_ID = process.env.NEXT_PUBLIC_SALON_ID || '00000000-0000-0000-0000-000000000001';
 const POLL_INTERVAL = 5000;
 
-export function useClientsPolling(enabled: boolean) {
+export function useClientsPolling(enabled: boolean, businessId?: string) {
+  const effectiveBusinessId = businessId ?? DEFAULT_BUSINESS_ID;
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -16,7 +17,7 @@ export function useClientsPolling(enabled: boolean) {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('business_id', SALON_ID);
+        .eq('business_id', effectiveBusinessId);
       if (error) throw error;
       setClients(data || []);
     } catch (e) {
@@ -24,7 +25,7 @@ export function useClientsPolling(enabled: boolean) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [effectiveBusinessId]);
 
   useEffect(() => {
     if (!enabled) {

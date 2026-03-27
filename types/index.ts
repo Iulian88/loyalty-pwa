@@ -15,6 +15,12 @@ export interface Salon {
   created_at: string;
 }
 
+export interface Business {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
 export interface VisitLog {
   id: string;
   client_id: string;
