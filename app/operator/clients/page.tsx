@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import NavBar from '@/components/NavBar';
 import ClientCard from '@/components/ClientCard';
 
-const SALON_ID = process.env.NEXT_PUBLIC_SALON_ID || '00000000-0000-0000-0000-000000000001';
+const DEFAULT_BUSINESS_ID = process.env.NEXT_PUBLIC_DEFAULT_BUSINESS_ID || '00000000-0000-0000-0000-000000000001';
 
 type SortKey = 'newest' | 'visits' | 'closest';
 type FilterKey = 'all' | 'reward' | 'near' | 'inactive';
@@ -39,7 +39,7 @@ export default function ClientsPage() {
         const { data: clientsData } = await supabase
           .from('clients')
           .select('*')
-          .eq('business_id', SALON_ID);
+          .eq('business_id', DEFAULT_BUSINESS_ID);
         if (mounted && clientsData) setClients(clientsData as Client[]);
         if (mounted) setLoading(false);
       })

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Client } from '@/types';
 
-const DEFAULT_BUSINESS_ID = process.env.NEXT_PUBLIC_SALON_ID || '00000000-0000-0000-0000-000000000001';
+const DEFAULT_BUSINESS_ID = process.env.NEXT_PUBLIC_DEFAULT_BUSINESS_ID || '00000000-0000-0000-0000-000000000001';
 const POLL_INTERVAL = 5000;
 
 export function useClientsPolling(enabled: boolean, businessId?: string) {

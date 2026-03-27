@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase';
 import NavBar from '@/components/NavBar';
 import type { Client } from '@/types';
 
-const SALON_ID = process.env.NEXT_PUBLIC_SALON_ID || '00000000-0000-0000-0000-000000000001';
+const DEFAULT_BUSINESS_ID = process.env.NEXT_PUBLIC_DEFAULT_BUSINESS_ID || '00000000-0000-0000-0000-000000000001';
 
 export default function OperatorDashboardPage() {
   const router = useRouter();
@@ -54,7 +54,7 @@ export default function OperatorDashboardPage() {
   }, [router]);
 
   const fetchClients = useCallback(async () => {
-    const { data, error } = await supabase.from('clients').select('*').eq('business_id', SALON_ID);
+    const { data, error } = await supabase.from('clients').select('*').eq('business_id', DEFAULT_BUSINESS_ID);
     if (!error) setClients(data || []);
   }, []);
 

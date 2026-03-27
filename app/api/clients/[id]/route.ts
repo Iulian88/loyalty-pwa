@@ -26,9 +26,9 @@ export async function GET(
   }
 
   try {
-    const salonId = process.env.DEFAULT_BUSINESS_ID;
-    if (!salonId) throw new Error('DEFAULT_BUSINESS_ID is not set');
-    const client = await getClientById(params.id, salonId);
+    const businessId = process.env.DEFAULT_BUSINESS_ID;
+    if (!businessId) throw new Error('DEFAULT_BUSINESS_ID is not set');
+    const client = await getClientById(params.id, businessId);
     return NextResponse.json({
       id: client.id,
       name: client.name,
