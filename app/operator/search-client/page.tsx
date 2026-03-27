@@ -51,7 +51,7 @@ function SearchClientContent() {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('salon_id', process.env.NEXT_PUBLIC_SALON_ID || '00000000-0000-0000-0000-000000000001');
+        .eq('business_id', process.env.NEXT_PUBLIC_SALON_ID || '00000000-0000-0000-0000-000000000001');
       if (error) throw error;
       const sorted = (data || []).sort((a: Client, b: Client) => b.visits - a.visits);
       setAllClients(sorted);

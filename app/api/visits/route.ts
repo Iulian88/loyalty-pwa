@@ -20,6 +20,10 @@ export async function POST(req: NextRequest) {
 
   try {
     const { clientId, action } = await req.json();
+    const businessId = process.env.DEFAULT_BUSINESS_ID;
+    if (!businessId) {
+      throw new Error('DEFAULT_BUSINESS_ID is not set');
+    }
 
     if (!clientId || ![-1, 0, 1, 2].includes(action)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });
@@ -29,6 +33,7 @@ export async function POST(req: NextRequest) {
       .from('clients')
       .select('id')
       .eq('id', clientId)
+      .eq('business_id', businessId)
       .single();
 
     if (fetchError || !existingClient) {
@@ -37,13 +42,13 @@ export async function POST(req: NextRequest) {
 
     let updatedClient;
     if (action === 1) {
-      updatedClient = await addVisit(supabase, clientId, operatorId);
+      updatedClient = await addVisit(supabase, clientId, operatorId, businessId);
     } else if (action === -1) {
-      updatedClient = await removeVisit(supabase, clientId, operatorId);
+      updatedClient = await removeVisit(supabase, clientId, operatorId, businessId);
     } else if (action === 0) {
-      updatedClient = await resetVisits(supabase, clientId, operatorId);
+      updatedClient = await resetVisits(supabase, clientId, operatorId, businessId);
     } else if (action === 2) {
-      updatedClient = await claimReward(supabase, clientId, operatorId);
+      updatedClient = await claimReward(supabase, clientId, operatorId, businessId);
     } else {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }

@@ -45,14 +45,18 @@ export async function POST(request: NextRequest, { params }: { params: { clientI
   try {
     const body = await request.json();
     const { action } = body;
+    const businessId = process.env.DEFAULT_BUSINESS_ID;
+    if (!businessId) {
+      throw new Error('DEFAULT_BUSINESS_ID is not set');
+    }
     if (!action || !['add', 'remove'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
     let client;
     if (action === 'add') {
-      client = await addVisit(supabase, params.clientId, operatorId);
+      client = await addVisit(supabase, params.clientId, operatorId, businessId);
     } else {
-      client = await removeVisit(supabase, params.clientId, operatorId);
+      client = await removeVisit(supabase, params.clientId, operatorId, businessId);
     }
     return NextResponse.json({ client });
   } catch (error) {

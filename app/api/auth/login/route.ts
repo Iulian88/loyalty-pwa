@@ -7,7 +7,10 @@ import type { Client } from '@/types';
 export async function POST(request: NextRequest) {
   try {
     const { phone, pin } = await request.json();
-    const salonId = process.env.DEFAULT_SALON_ID || '00000000-0000-0000-0000-000000000001';
+    const businessId = process.env.DEFAULT_BUSINESS_ID;
+    if (!businessId) {
+      throw new Error('DEFAULT_BUSINESS_ID is not set');
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,7 +21,7 @@ export async function POST(request: NextRequest) {
       .from('clients')
       .select('*')
       .eq('phone', phone)
-      .eq('salon_id', salonId)
+      .eq('business_id', businessId)
       .single();
 
     let client: Client;

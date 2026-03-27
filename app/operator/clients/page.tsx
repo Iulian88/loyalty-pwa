@@ -39,7 +39,7 @@ export default function ClientsPage() {
         const { data: clientsData } = await supabase
           .from('clients')
           .select('*')
-          .eq('salon_id', SALON_ID);
+          .eq('business_id', SALON_ID);
         if (mounted && clientsData) setClients(clientsData as Client[]);
         if (mounted) setLoading(false);
       })

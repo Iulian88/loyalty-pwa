@@ -54,7 +54,7 @@ export default function OperatorDashboardPage() {
   }, [router]);
 
   const fetchClients = useCallback(async () => {
-    const { data, error } = await supabase.from('clients').select('*').eq('salon_id', SALON_ID);
+    const { data, error } = await supabase.from('clients').select('*').eq('business_id', SALON_ID);
     if (!error) setClients(data || []);
   }, []);
 

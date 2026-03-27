@@ -2,13 +2,14 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { VISIT_GOAL } from './supabase';
 import type { Client } from '../types';
 
-const CLIENT_COLUMNS = 'id,name,phone,visits,reward_claimed,created_at,salon_id,claimed_at';
+const CLIENT_COLUMNS = 'id,name,phone,visits,reward_claimed,created_at,business_id,claimed_at';
 
-export async function addVisit(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
+export async function addVisit(supabase: SupabaseClient, clientId: string, operatorId: string, businessId: string): Promise<Client> {
   const { data: client, error: fetchError } = await supabase
     .from('clients')
     .select(CLIENT_COLUMNS)
     .eq('id', clientId)
+    .eq('business_id', businessId)
     .single();
 
   if (fetchError || !client) {
@@ -22,6 +23,7 @@ export async function addVisit(supabase: SupabaseClient, clientId: string, opera
     .from('clients')
     .update({ visits: newVisits })
     .eq('id', clientId)
+    .eq('business_id', businessId)
     .select(CLIENT_COLUMNS)
     .single();
 
@@ -36,11 +38,12 @@ export async function addVisit(supabase: SupabaseClient, clientId: string, opera
   return updated as Client;
 }
 
-export async function removeVisit(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
+export async function removeVisit(supabase: SupabaseClient, clientId: string, operatorId: string, businessId: string): Promise<Client> {
   const { data: client, error: fetchError } = await supabase
     .from('clients')
     .select(CLIENT_COLUMNS)
     .eq('id', clientId)
+    .eq('business_id', businessId)
     .single();
 
   if (fetchError || !client) {
@@ -54,6 +57,7 @@ export async function removeVisit(supabase: SupabaseClient, clientId: string, op
     .from('clients')
     .update({ visits: newVisits })
     .eq('id', clientId)
+    .eq('business_id', businessId)
     .select(CLIENT_COLUMNS)
     .single();
 
@@ -68,11 +72,12 @@ export async function removeVisit(supabase: SupabaseClient, clientId: string, op
   return updated as Client;
 }
 
-export async function resetVisits(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
+export async function resetVisits(supabase: SupabaseClient, clientId: string, operatorId: string, businessId: string): Promise<Client> {
   const { data: client, error: fetchError } = await supabase
     .from('clients')
     .select(CLIENT_COLUMNS)
     .eq('id', clientId)
+    .eq('business_id', businessId)
     .single();
 
   if (fetchError || !client) {
@@ -83,6 +88,7 @@ export async function resetVisits(supabase: SupabaseClient, clientId: string, op
     .from('clients')
     .update({ visits: 0 })
     .eq('id', clientId)
+    .eq('business_id', businessId)
     .select(CLIENT_COLUMNS)
     .single();
 
@@ -97,11 +103,12 @@ export async function resetVisits(supabase: SupabaseClient, clientId: string, op
   return updated as Client;
 }
 
-export async function claimReward(supabase: SupabaseClient, clientId: string, operatorId: string): Promise<Client> {
+export async function claimReward(supabase: SupabaseClient, clientId: string, operatorId: string, businessId: string): Promise<Client> {
   const { data: client, error: fetchError } = await supabase
     .from('clients')
     .select(CLIENT_COLUMNS)
     .eq('id', clientId)
+    .eq('business_id', businessId)
     .single();
 
   if (fetchError || !client) throw new Error('Client not found.');
@@ -111,6 +118,7 @@ export async function claimReward(supabase: SupabaseClient, clientId: string, op
     .from('clients')
     .update({ visits: 0, reward_claimed: true, claimed_at: new Date().toISOString() })
     .eq('id', clientId)
+    .eq('business_id', businessId)
     .select(CLIENT_COLUMNS)
     .single();
 
@@ -128,7 +136,7 @@ export async function searchClientByPhone(supabase: SupabaseClient, phone: strin
     .from('clients')
     .select('*')
     .eq('phone', phone)
-    .eq('salon_id', salonId)
+    .eq('business_id', salonId)
     .single();
 
   if (error) return null;

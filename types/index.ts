@@ -1,6 +1,6 @@
 export interface Client {
   id: string;
-  salon_id: string;
+  business_id: string;
   name: string;
   phone: string;
   visits: number;

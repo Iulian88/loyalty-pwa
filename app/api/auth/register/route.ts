@@ -8,7 +8,10 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { name, phone, pin } = body;
-    const salonId = process.env.DEFAULT_SALON_ID || '00000000-0000-0000-0000-000000000001';
+    const businessId = process.env.DEFAULT_BUSINESS_ID;
+    if (!businessId) {
+      throw new Error('DEFAULT_BUSINESS_ID is not set');
+    }
 
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -20,7 +23,7 @@ export async function POST(request: NextRequest) {
       .from('clients')
       .select('id')
       .eq('phone', phone)
-      .eq('salon_id', salonId)
+      .eq('business_id', businessId)
       .single();
 
     if (checkError && checkError.code !== 'PGRST116') {
@@ -34,7 +37,7 @@ export async function POST(request: NextRequest) {
 
     const { data, error: insertError } = await supabase
       .from('clients')
-      .insert({ name, phone, salon_id: salonId, visits: 0, reward_claimed: false, pin_hash })
+      .insert({ name, phone, business_id: businessId, visits: 0, reward_claimed: false, pin_hash })
       .select()
       .single();
 

@@ -16,7 +16,7 @@ export function useClientsPolling(enabled: boolean) {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('salon_id', SALON_ID);
+        .eq('business_id', SALON_ID);
       if (error) throw error;
       setClients(data || []);
     } catch (e) {

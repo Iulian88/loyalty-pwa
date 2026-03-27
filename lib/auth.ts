@@ -32,7 +32,7 @@ export async function registerClient(name: string, phone: string, salonId: strin
     .from('clients')
     .select('*')
     .eq('phone', phone)
-    .eq('salon_id', salonId)
+    .eq('business_id', salonId)
     .single();
 
   if (checkError && checkError.code !== 'PGRST116') {
@@ -45,7 +45,7 @@ export async function registerClient(name: string, phone: string, salonId: strin
 
   const { data, error: insertError } = await supabase
     .from('clients')
-    .insert({ name, phone, salon_id: salonId, visits: 0, reward_claimed: false })
+    .insert({ name, phone, business_id: salonId, visits: 0, reward_claimed: false })
     .select()
     .single();
 
@@ -61,7 +61,7 @@ export async function loginClient(phone: string, salonId: string): Promise<Clien
     .from('clients')
     .select('*')
     .eq('phone', phone)
-    .eq('salon_id', salonId)
+    .eq('business_id', salonId)
     .single();
 
   if (error && error.code !== 'PGRST116') {
@@ -76,12 +76,13 @@ export async function loginClient(phone: string, salonId: string): Promise<Clien
   return data as Client;
 }
 
-export async function getClientById(id: string): Promise<Client> {
-  const { data, error } = await supabase
+export async function getClientById(id: string, salonId?: string): Promise<Client> {
+  let query = supabase
     .from('clients')
-    .select('id, name, phone, visits, reward_claimed, created_at, salon_id, claimed_at')
-    .eq('id', id)
-    .single();
+    .select('id, name, phone, visits, reward_claimed, created_at, business_id, claimed_at')
+    .eq('id', id);
+  if (salonId) query = query.eq('business_id', salonId);
+  const { data, error } = await query.single();
 
   if (error || !data) {
     throw new Error('Client not found.');
