@@ -15,9 +15,13 @@ export async function addVisit(supabase: SupabaseClient, clientId: string, opera
   if (fetchError || !client) {
     throw new Error('Client not found.');
   }
-  if (client.visits >= VISIT_GOAL) throw new Error('Client already reached the visit goal.');
 
-  const newVisits = Math.min(client.visits + 1, VISIT_GOAL);
+  const { data: addBusiness } = await supabase.from('businesses').select('visit_goal').eq('id', businessId).single();
+  const visitGoal = addBusiness?.visit_goal ?? VISIT_GOAL;
+
+  if (client.visits >= visitGoal) throw new Error('Client already reached the visit goal.');
+
+  const newVisits = Math.min(client.visits + 1, visitGoal);
 
   const { data: updated, error: updateError } = await supabase
     .from('clients')
@@ -112,7 +116,11 @@ export async function claimReward(supabase: SupabaseClient, clientId: string, op
     .single();
 
   if (fetchError || !client) throw new Error('Client not found.');
-  if (client.visits < VISIT_GOAL) throw new Error('Client has not reached the visit goal yet.');
+
+  const { data: claimBusiness } = await supabase.from('businesses').select('visit_goal').eq('id', businessId).single();
+  const claimVisitGoal = claimBusiness?.visit_goal ?? VISIT_GOAL;
+
+  if (client.visits < claimVisitGoal) throw new Error('Client has not reached the visit goal yet.');
 
   const { data: updated, error: updateError } = await supabase
     .from('clients')

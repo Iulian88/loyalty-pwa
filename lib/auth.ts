@@ -1,6 +1,6 @@
 import { supabase } from './supabase';
 import jwt from 'jsonwebtoken';
-import type { Client, VisitLog } from '../types';
+import type { Client } from '../types';
 
 function getClientJwtSecret(): string {
   const secret = process.env.CLIENT_JWT_SECRET;
@@ -18,13 +18,24 @@ function getOperatorJwtSecret(): string {
   return secret;
 }
 
-export type { Client, VisitLog } from '../types';
+export type { Client, User, VisitLog } from '../types';
 
-export interface ClientSession {
+/** Shape stored inside the JWT (new format). */
+export interface UserSession {
+  userId: string;
+  name: string;
+  phone: string;
+}
+
+/** Legacy shape — old JWTs signed before the users table migration. */
+interface LegacySession {
   id: string;
   name: string;
   phone: string;
 }
+
+// Keep old name as alias so existing imports still compile
+export type ClientSession = UserSession;
 
 export async function registerClient(name: string, phone: string, salonId: string): Promise<Client> {
   // Check if phone already registered
@@ -90,19 +101,29 @@ export async function getClientById(id: string, salonId?: string): Promise<Clien
   return data as Client;
 }
 
-export function setSession(client: Client) {
+/** Sign a JWT for a User (new) or a legacy Client (backward compat). */
+export function setSession(subject: { id: string; name: string; phone: string }) {
   const token = jwt.sign(
-    { id: client.id, name: client.name, phone: client.phone },
+    { userId: subject.id, name: subject.name, phone: subject.phone },
     getClientJwtSecret(),
     { expiresIn: '7d' }
   );
   return token;
 }
 
-export function getSession(token: string): ClientSession | null {
+/**
+ * Verify a client JWT and normalise to UserSession.
+ * Handles both new JWTs ({ userId, name, phone }) and
+ * legacy JWTs ({ id, name, phone }) transparently.
+ */
+export function getSession(token: string): UserSession | null {
   try {
-    const decoded = jwt.verify(token, getClientJwtSecret()) as ClientSession;
-    return decoded;
+    const decoded = jwt.verify(token, getClientJwtSecret()) as UserSession & LegacySession;
+    // New format
+    if (decoded.userId) return { userId: decoded.userId, name: decoded.name, phone: decoded.phone };
+    // Legacy format — id was the client id; treat it as userId for fallback paths
+    if (decoded.id) return { userId: decoded.id, name: decoded.name, phone: decoded.phone };
+    return null;
   } catch {
     return null;
   }

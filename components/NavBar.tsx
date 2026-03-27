@@ -13,8 +13,10 @@ interface NavBarProps {
   role: 'client' | 'operator';
 }
 
-const LogoMarkIcon = () => (
-  <img src="/icons/logo-mark.svg" alt="" className="w-6 h-6 object-contain" />
+const CardsIcon = () => (
+  <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+    <path d="M20 4H4c-1.11 0-2 .89-2 2v12c0 1.11.89 2 2 2h16c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2zm0 14H4v-6h16v6zm0-10H4V6h16v2z"/>
+  </svg>
 );
 
 const QrIcon = () => (
@@ -51,7 +53,7 @@ const PeopleIcon = () => (
 );
 
 const clientNavItems: NavItem[] = [
-  { href: '/dashboard', label: 'Card', icon: <LogoMarkIcon /> },
+  { href: '/cards', label: 'Carduri', icon: <CardsIcon /> },
   { href: '/show-qr', label: 'My QR', icon: <QrIcon /> },
 ];
 
@@ -71,7 +73,7 @@ export default function NavBar({ role }: NavBarProps) {
       <div className="glass-card border-t border-[var(--border)] border-l-0 border-r-0 border-b-0">
         <div className="flex items-center justify-around px-2 py-3">
           {items.map((item) => {
-            const active = pathname === item.href;
+            const active = pathname === item.href || (item.href === '/cards' && pathname.startsWith('/dashboard'));
             return (
               <Link
                 key={item.href}

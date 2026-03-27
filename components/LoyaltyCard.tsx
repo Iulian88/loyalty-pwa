@@ -5,6 +5,8 @@ interface LoyaltyCardProps {
   name: string;
   visitGoal: number;
   bump?: boolean;
+  businessName?: string;
+  rewardDescription?: string | null;
 }
 
 function getProximityMessage(visits: number, visitGoal: number): string {
@@ -18,7 +20,7 @@ function getProximityMessage(visits: number, visitGoal: number): string {
   return `Mai ai ${visitGoal - visits} vizite`;
 }
 
-export default function LoyaltyCard({ visits, name, visitGoal, bump }: Readonly<LoyaltyCardProps>) {
+export default function LoyaltyCard({ visits, name, visitGoal, bump, businessName, rewardDescription }: Readonly<LoyaltyCardProps>) {
   const isComplete = visits >= visitGoal;
   const progress = visitGoal > 0 ? Math.min((visits / visitGoal) * 100, 100) : 0;
 
@@ -27,8 +29,14 @@ export default function LoyaltyCard({ visits, name, visitGoal, bump }: Readonly<
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
+          {businessName && (
+            <p className="text-xs font-semibold text-[var(--gold-light)] uppercase tracking-widest mb-0.5">{businessName}</p>
+          )}
           <p className="text-xs uppercase tracking-widest text-[var(--muted)] font-body mb-1">Card fidelitate</p>
           <h2 className="font-display text-lg font-semibold text-[var(--text)]">{name}</h2>
+          {rewardDescription && (
+            <p className="text-xs text-[var(--muted)] mt-1 italic">{rewardDescription}</p>
+          )}
         </div>
         <div className="text-right">
           <p className="text-xs text-[var(--muted)] mb-1">Progres</p>

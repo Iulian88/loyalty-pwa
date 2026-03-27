@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
 import { setSession } from '@/lib/auth';
-import type { Client } from '@/types';
+import type { User } from '@/types';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, phone, pin } = body;
-    const businessId = process.env.DEFAULT_BUSINESS_ID;
-    if (!businessId) {
-      throw new Error('DEFAULT_BUSINESS_ID is not set');
+    console.log('[REGISTER] input:', { name: body?.name, phone: body?.phone });
+    const { name, phone } = body;
+
+    if (!name?.trim() || !phone?.trim()) {
+      return NextResponse.json({ error: 'Name and phone are required.' }, { status: 400 });
     }
 
     const supabase = createClient(
@@ -18,26 +18,22 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Duplicate phone check
-    const { data: existing, error: checkError } = await supabase
-      .from('clients')
+    // Check if phone already registered as a user
+    const { data: existing } = await supabase
+      .from('users')
       .select('id')
-      .eq('phone', phone)
-      .eq('business_id', businessId)
+      .eq('phone', phone.trim())
       .single();
 
-    if (checkError && checkError.code !== 'PGRST116') {
-      throw new Error(checkError.message);
-    }
     if (existing) {
-      throw new Error('Phone number already registered.');
+      console.log('[REGISTER] phone already registered:', phone.trim());
+      return NextResponse.json({ error: 'Phone number already registered.' }, { status: 400 });
     }
 
-    const pin_hash = pin ? await bcrypt.hash(pin, 12) : null;
-
+    // Insert user (only columns that exist: id, phone, name, created_at)
     const { data, error: insertError } = await supabase
-      .from('clients')
-      .insert({ name, phone, business_id: businessId, visits: 0, reward_claimed: false, pin_hash })
+      .from('users')
+      .insert({ name: name.trim(), phone: phone.trim() })
       .select()
       .single();
 
@@ -45,18 +41,20 @@ export async function POST(request: NextRequest) {
       throw new Error(insertError.message);
     }
 
-    const client = data as Client;
-    const token = setSession(client);
+    const user = data as User;
+    console.log('[REGISTER] created user:', user.id);
+    const token = setSession({ id: user.id, name: user.name, phone: user.phone });
     const response = NextResponse.json({ success: true });
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 days
+      maxAge: 60 * 60 * 24 * 7,
     });
     return response;
   } catch (error) {
+    console.error('[REGISTER] unexpected error:', error);
     return NextResponse.json(
       { error: (error as Error).message },
       { status: 400 }

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyOperatorToken } from '@/lib/auth';
-import { VISIT_GOAL } from '@/lib/supabase';
+import { VISIT_GOAL, getBusinessById } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get('operator_session')?.value;
@@ -15,8 +15,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401, headers: noStore });
   }
 
+  const businessId = process.env.DEFAULT_BUSINESS_ID;
+  const business = businessId ? await getBusinessById(businessId) : null;
+  const visitGoal = business?.visit_goal ?? VISIT_GOAL;
+
   return NextResponse.json(
-    { success: true, visitGoal: VISIT_GOAL, data: { operatorId } },
+    { success: true, visitGoal, data: { operatorId } },
     { headers: noStore }
   );
 }

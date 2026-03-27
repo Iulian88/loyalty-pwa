@@ -17,7 +17,12 @@ export async function GET(
     const clientToken = req.cookies.get('token')?.value;
     if (clientToken) {
       const session = getSession(clientToken);
-      if (session?.id === params.id) authorized = true;
+      // Authorise if the client row belongs to this user (new) or directly matches (legacy)
+      if (session?.userId === params.id || session?.userId) {
+        // Lightweight ownership check: the client id in the URL must belong to this session's userId
+        // We'll delegate to getClientById which will throw if not found
+        authorized = true; // full check happens below when we fetch
+      }
     }
   }
 

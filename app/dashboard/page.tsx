@@ -1,30 +1,30 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Client } from '@/lib/auth';
-import { VisitLog } from '@/types';
+import { VisitLog, User } from '@/types';
 import LoyaltyCard from '@/components/LoyaltyCard';
 import NavBar from '@/components/NavBar';
 import InstallPrompt from '@/components/InstallPrompt';
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
-  const [client, setClient] = useState<Client | null>(null);
+  const searchParams = useSearchParams();
+  const cardId = searchParams.get('cardId');
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [visitGoal, setVisitGoal] = useState(0);
+  const [rewardDescription, setRewardDescription] = useState<string | null>(null);
+  const [businessName, setBusinessName] = useState('');
   const [visitHistory, setVisitHistory] = useState<VisitLog[]>([]);
   const prevVisitsRef = useRef<number | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const bumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [toast, setToast] = useState('');
   const [cardBump, setCardBump] = useState(false);
-  const [cards, setCards] = useState<Client[]>([]);
   const [activeCard, setActiveCard] = useState<Client | null>(null);
-  const [businessNames, setBusinessNames] = useState<Record<string, string>>({});
-  const [businessConfigs, setBusinessConfigs] = useState<Record<string, { visit_goal: number; reward_description: string | null }>>({});
-  const [rewardDescription, setRewardDescription] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -33,39 +33,41 @@ export default function DashboardPage() {
         if (!res.ok) { router.replace('/login'); return null; }
         return res.json();
       })
-      .then(data => {
+      .then(async data => {
         if (!mounted || !data) return;
-        setClient(data.client);
-        setActiveCard(data.client);
-        setVisitGoal(data.visitGoal);
-        setRewardDescription(data.rewardDescription ?? null);
-        prevVisitsRef.current = data.client.visits;
-        Promise.all([
-          fetch('/api/my-cards', { credentials: 'include', cache: 'no-store' }).then(r => r.ok ? r.json() : null),
-          fetch('/api/businesses', { credentials: 'include', cache: 'no-store' }).then(r => r.ok ? r.json() : null),
-        ]).then(([cardsData, bizData]) => {
-          if (!mounted) return;
-          if (cardsData?.cards) {
-            setCards(cardsData.cards);
-            if (cardsData.cards.length > 0) setActiveCard(cardsData.cards[0]);
+        if (data.user) setUser(data.user);
+
+        const [cardsRes, bizRes] = await Promise.all([
+          fetch('/api/my-cards', { credentials: 'include', cache: 'no-store' }),
+          fetch('/api/my-business-options', { credentials: 'include', cache: 'no-store' }),
+        ]);
+        if (!mounted) return;
+
+        const cardsData = cardsRes.ok ? await cardsRes.json() : null;
+        const bizData = bizRes.ok ? await bizRes.json() : null;
+
+        const allCards: Client[] = cardsData?.cards ?? [];
+        if (allCards.length === 0) { router.replace('/cards'); return; }
+
+        const picked = (cardId ? allCards.find(c => c.id === cardId) : null) ?? allCards[0];
+        setActiveCard(picked);
+        prevVisitsRef.current = picked.visits;
+
+        if (bizData?.businesses) {
+          const biz = bizData.businesses.find((b: { id: string; name: string; visit_goal: number; reward_description: string | null }) => b.id === picked.business_id);
+          if (biz) {
+            setBusinessName(biz.name);
+            setVisitGoal(biz.visit_goal ?? 10);
+            setRewardDescription(biz.reward_description ?? null);
           }
-          if (bizData?.businesses) {
-            const names: Record<string, string> = {};
-            const configs: Record<string, { visit_goal: number; reward_description: string | null }> = {};
-            for (const b of bizData.businesses) {
-              names[b.id] = b.name;
-              configs[b.id] = { visit_goal: b.visit_goal ?? 10, reward_description: b.reward_description ?? null };
-            }
-            setBusinessNames(names);
-            setBusinessConfigs(configs);
-          }
-        }).catch(() => {});
+        }
       })
       .catch(() => { if (mounted) router.replace('/login'); })
       .finally(() => { if (mounted) setLoading(false); });
     return () => { mounted = false; };
-  }, [router]);
+  }, [router, cardId]);
 
+  // Load visit history when active card changes
   useEffect(() => {
     if (!activeCard) return;
     fetch(`/api/visits/${activeCard.id}`)
@@ -74,30 +76,20 @@ export default function DashboardPage() {
       .catch(() => {});
   }, [activeCard?.id]);
 
-  // Update visit goal and reward description when active card changes
+  // Poll /api/my-cards to detect visit updates on the active card
   useEffect(() => {
     if (!activeCard) return;
-    const cfg = businessConfigs[activeCard.business_id];
-    if (cfg) {
-      setVisitGoal(cfg.visit_goal);
-      setRewardDescription(cfg.reward_description);
-    }
-  }, [activeCard?.business_id, businessConfigs]);
-
-  useEffect(() => {
-    if (!client) return;
     const interval = setInterval(() => {
-      fetch('/api/auth/session')
+      fetch('/api/my-cards', { credentials: 'include' })
         .then(res => {
-          if (res.status === 401) {
-            clearInterval(interval);
-            return null;
-          }
+          if (res.status === 401) { clearInterval(interval); return null; }
           return res.json();
         })
         .then(data => {
-          if (!data || data.error) return;
-          const newVisits = data.client.visits;
+          if (!data) return;
+          const updated: Client | undefined = data.cards?.find((c: Client) => c.id === activeCard.id);
+          if (!updated) return;
+          const newVisits = updated.visits;
           if (prevVisitsRef.current !== null && newVisits > prevVisitsRef.current) {
             if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
             setToast('+1 vizită adăugată ✔️');
@@ -107,9 +99,7 @@ export default function DashboardPage() {
             bumpTimerRef.current = setTimeout(() => setCardBump(false), 450);
           }
           prevVisitsRef.current = newVisits;
-          setClient(data.client);
-          setActiveCard(prev => prev?.id === data.client.id ? data.client : prev);
-          setVisitGoal(data.visitGoal);
+          setActiveCard(updated);
         })
         .catch(() => {});
     }, 3000);
@@ -118,7 +108,7 @@ export default function DashboardPage() {
       if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
       if (bumpTimerRef.current) clearTimeout(bumpTimerRef.current);
     };
-  }, [client?.id]);
+  }, [activeCard?.id]);
 
   const handleLogout = async () => {
     await fetch('/api/auth/logout', { method: 'POST' });
@@ -133,7 +123,7 @@ export default function DashboardPage() {
     );
   }
 
-  if (!client || !activeCard) return null;
+  if (!activeCard) return null;
 
   const isComplete = activeCard.visits >= visitGoal;
 
@@ -151,7 +141,7 @@ export default function DashboardPage() {
       <header className="flex items-center justify-between p-6 pt-8">
         <div className="fade-up">
           <p className="text-xs uppercase tracking-widest text-[var(--muted)]">Bună ziua,</p>
-          <h1 className="font-display text-2xl font-semibold text-[var(--text)]">{activeCard.name.split(' ')[0]}</h1>
+          <h1 className="font-display text-2xl font-semibold text-[var(--text)]">{(user?.name ?? activeCard.name).split(' ')[0]}</h1>
         </div>
         <button
           onClick={handleLogout}
@@ -165,34 +155,16 @@ export default function DashboardPage() {
 
       {/* Content */}
       <div className="flex-1 px-6 space-y-5">
-        {/* Card Selector */}
-        {cards.length > 1 && (
-          <div className="flex gap-2 overflow-x-auto pb-1 fade-up">
-            {cards.map(card => (
-              <button
-                key={card.id}
-                onClick={() => setActiveCard(card)}
-                className={`flex-shrink-0 px-3 py-2 rounded-xl border text-sm transition-colors ${
-                  activeCard?.id === card.id
-                    ? 'border-[var(--gold-dim)] bg-[var(--gold-dim)]/10 text-[var(--gold)]'
-                    : 'border-[var(--border)] text-[var(--muted)] hover:text-[var(--text)]'
-                }`}
-              >
-                <span className="block font-medium leading-tight">
-                  {businessNames[card.business_id] ?? card.business_id.slice(0, 8)}
-                </span>
-                <span className="block text-xs opacity-70">{card.visits} vizite</span>
-              </button>
-            ))}
-          </div>
-        )}
-
         {/* Loyalty Card */}
-        <div className="relative fade-up delay-100">
-          <LoyaltyCard visits={activeCard.visits} name={activeCard.name} visitGoal={visitGoal} bump={cardBump} />
-          {rewardDescription && (
-            <p className="text-xs text-[var(--muted)] text-center mt-2 px-2">{rewardDescription}</p>
-          )}
+        <div className="relative fade-up">
+          <LoyaltyCard
+            visits={activeCard.visits}
+            name={activeCard.name}
+            visitGoal={visitGoal}
+            bump={cardBump}
+            businessName={businessName}
+            rewardDescription={rewardDescription}
+          />
         </div>
 
         {/* Reward Banner */}
@@ -289,5 +261,17 @@ export default function DashboardPage() {
 
       <NavBar role="client" />
     </main>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[var(--gold-dim)] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   );
 }
