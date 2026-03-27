@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, getClientById } from '@/lib/auth';
-import { VISIT_GOAL } from '@/lib/supabase';
+import { VISIT_GOAL, getBusinessById } from '@/lib/supabase';
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,7 +15,11 @@ export async function GET(request: NextRequest) {
     }
 
     const client = await getClientById(session.id);
-    return NextResponse.json({ client, visitGoal: VISIT_GOAL });
+    const business = await getBusinessById(client.business_id);
+    const visitGoal = business?.visit_goal ?? VISIT_GOAL;
+    const rewardDescription = business?.reward_description ?? null;
+
+    return NextResponse.json({ client, visitGoal, rewardDescription, business });
   } catch (error) {
     return NextResponse.json({ error: (error as Error).message }, { status: 500 });
   }

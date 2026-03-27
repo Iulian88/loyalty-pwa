@@ -23,6 +23,8 @@ export default function DashboardPage() {
   const [cards, setCards] = useState<Client[]>([]);
   const [activeCard, setActiveCard] = useState<Client | null>(null);
   const [businessNames, setBusinessNames] = useState<Record<string, string>>({});
+  const [businessConfigs, setBusinessConfigs] = useState<Record<string, { visit_goal: number; reward_description: string | null }>>({});
+  const [rewardDescription, setRewardDescription] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
@@ -36,6 +38,7 @@ export default function DashboardPage() {
         setClient(data.client);
         setActiveCard(data.client);
         setVisitGoal(data.visitGoal);
+        setRewardDescription(data.rewardDescription ?? null);
         prevVisitsRef.current = data.client.visits;
         Promise.all([
           fetch('/api/my-cards', { credentials: 'include', cache: 'no-store' }).then(r => r.ok ? r.json() : null),
@@ -47,9 +50,14 @@ export default function DashboardPage() {
             if (cardsData.cards.length > 0) setActiveCard(cardsData.cards[0]);
           }
           if (bizData?.businesses) {
-            const map: Record<string, string> = {};
-            for (const b of bizData.businesses) map[b.id] = b.name;
-            setBusinessNames(map);
+            const names: Record<string, string> = {};
+            const configs: Record<string, { visit_goal: number; reward_description: string | null }> = {};
+            for (const b of bizData.businesses) {
+              names[b.id] = b.name;
+              configs[b.id] = { visit_goal: b.visit_goal ?? 10, reward_description: b.reward_description ?? null };
+            }
+            setBusinessNames(names);
+            setBusinessConfigs(configs);
           }
         }).catch(() => {});
       })
@@ -65,6 +73,16 @@ export default function DashboardPage() {
       .then(data => { if (data.history) setVisitHistory(data.history); })
       .catch(() => {});
   }, [activeCard?.id]);
+
+  // Update visit goal and reward description when active card changes
+  useEffect(() => {
+    if (!activeCard) return;
+    const cfg = businessConfigs[activeCard.business_id];
+    if (cfg) {
+      setVisitGoal(cfg.visit_goal);
+      setRewardDescription(cfg.reward_description);
+    }
+  }, [activeCard?.business_id, businessConfigs]);
 
   useEffect(() => {
     if (!client) return;
@@ -172,6 +190,9 @@ export default function DashboardPage() {
         {/* Loyalty Card */}
         <div className="relative fade-up delay-100">
           <LoyaltyCard visits={activeCard.visits} name={activeCard.name} visitGoal={visitGoal} bump={cardBump} />
+          {rewardDescription && (
+            <p className="text-xs text-[var(--muted)] text-center mt-2 px-2">{rewardDescription}</p>
+          )}
         </div>
 
         {/* Reward Banner */}
@@ -181,7 +202,9 @@ export default function DashboardPage() {
               <div className="text-3xl">🎉</div>
               <div>
                 <h3 className="font-display font-semibold text-[var(--gold)] text-lg">🎉 Felicitări!</h3>
-                <p className="text-sm text-[var(--text-dim)]">Ai câștigat bonusul! Arată cardul stilistului.</p>
+                <p className="text-sm text-[var(--text-dim)]">
+                  {rewardDescription ?? 'Ai câștigat bonusul! Arată cardul stilistului.'}
+                </p>
               </div>
             </div>
           </div>

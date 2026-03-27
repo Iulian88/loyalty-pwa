@@ -18,6 +18,8 @@ export interface Salon {
 export interface Business {
   id: string;
   name: string;
+  visit_goal: number;
+  reward_description: string | null;
   created_at: string;
 }
 

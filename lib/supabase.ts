@@ -11,7 +11,7 @@ export const VISIT_GOAL = parseInt(process.env.LOYALTY_VISIT_GOAL || '10');
 export async function getBusinessById(businessId: string): Promise<Business | null> {
   const { data, error } = await supabase
     .from('businesses')
-    .select('id, name, created_at')
+    .select('id, name, visit_goal, reward_description, created_at')
     .eq('id', businessId)
     .single();
   if (error || !data) return null;
