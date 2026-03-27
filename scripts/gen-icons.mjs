@@ -76,11 +76,58 @@ async function makeIcon(size, outPath, bbox) {
   console.log(`✓ ${outPath.split('/').pop()} (${size}x${size})`);
 }
 
+// Build a multi-size ICO file from an array of { buf, w, h }
+function buildIco(images) {
+  const count = images.length;
+  const headerSize = 6 + count * 16;
+  let dataOffset = headerSize;
+
+  const header = Buffer.alloc(6);
+  header.writeUInt16LE(0, 0);   // reserved
+  header.writeUInt16LE(1, 2);   // type = ICO
+  header.writeUInt16LE(count, 4);
+
+  const entries = images.map(({ buf, w, h }) => {
+    const entry = Buffer.alloc(16);
+    entry.writeUInt8(w >= 256 ? 0 : w, 0);   // width  (0 = 256)
+    entry.writeUInt8(h >= 256 ? 0 : h, 1);   // height (0 = 256)
+    entry.writeUInt8(0, 2);                   // color count
+    entry.writeUInt8(0, 3);                   // reserved
+    entry.writeUInt16LE(1, 4);                // planes
+    entry.writeUInt16LE(32, 6);               // bits per pixel
+    entry.writeUInt32LE(buf.length, 8);       // size of image data
+    entry.writeUInt32LE(dataOffset, 12);      // offset of image data
+    dataOffset += buf.length;
+    return entry;
+  });
+
+  return Buffer.concat([header, ...entries, ...images.map(i => i.buf)]);
+}
+
+// Generate favicons from the already-correct icon-512.png (square, centred)
+async function makeFavicons() {
+  const src512 = resolve(__dirname, '../public/icons/icon-512.png');
+
+  const p32 = await sharp(src512).resize(32, 32).png().toBuffer();
+  writeFileSync(resolve(__dirname, '../public/favicon-32x32.png'), p32);
+  console.log('✓ favicon-32x32.png');
+
+  const p16 = await sharp(src512).resize(16, 16).png().toBuffer();
+  writeFileSync(resolve(__dirname, '../public/favicon-16x16.png'), p16);
+  console.log('✓ favicon-16x16.png');
+
+  const ico = buildIco([{ buf: p16, w: 16, h: 16 }, { buf: p32, w: 32, h: 32 }]);
+  writeFileSync(resolve(__dirname, '../public/favicon.ico'), ico);
+  console.log('✓ favicon.ico (16+32px embedded PNGs)');
+}
+
 async function generate() {
   const bbox = await getLogoBbox();
   await makeIcon(192, resolve(__dirname, '../public/icons/icon-192.png'), bbox);
   await makeIcon(512, resolve(__dirname, '../public/icons/icon-512.png'), bbox);
   await makeIcon(180, resolve(__dirname, '../public/icons/apple-touch-icon.png'), bbox);
+  console.log('');
+  await makeFavicons();
   console.log('\nAll icons generated — perfectly centred on black canvas.');
 }
 
