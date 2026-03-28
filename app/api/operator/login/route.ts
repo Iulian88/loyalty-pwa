@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { signOperatorToken } from '@/lib/auth';
+import bcrypt from 'bcryptjs';
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -10,19 +11,25 @@ const supabase = createClient(
 export async function POST(request: NextRequest) {
   const body = await request.json();
   const phone = (body.phone ?? '').trim();
+  const pin = (body.pin ?? '').trim();
 
-  if (!phone) {
-    return NextResponse.json({ error: 'Phone number is required' }, { status: 400 });
+  if (!phone || !pin) {
+    return NextResponse.json({ error: 'Phone and PIN are required' }, { status: 400 });
   }
 
   const { data: operator, error } = await supabase
     .from('operators')
-    .select('id, business_id, name, phone')
+    .select('id, business_id, name, phone, pin_hash')
     .eq('phone', phone)
     .single();
 
   if (error || !operator) {
-    return NextResponse.json({ error: 'Operator not found' }, { status: 404 });
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+  }
+
+  const pinValid = await bcrypt.compare(pin, operator.pin_hash);
+  if (!pinValid) {
+    return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
   const sessionToken = signOperatorToken(operator.id, operator.business_id);

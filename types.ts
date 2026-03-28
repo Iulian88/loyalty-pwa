@@ -25,9 +25,18 @@ export interface Client {
 
 export interface Business {
   id: string;
+  owner_id: string | null;
   name: string;
   visit_goal: number;
   reward_description: string | null;
+  created_at: string;
+}
+
+export interface Operator {
+  id: string;
+  business_id: string;
+  phone: string;
+  name: string;
   created_at: string;
 }
 

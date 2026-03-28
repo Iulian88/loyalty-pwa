@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import type { Client, User, Business } from '../types';
+import type { Client, User, Business, Operator } from '../types';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -51,4 +51,14 @@ export async function getFirstCardByUserId(userId: string): Promise<Client | nul
   return data as Client;
 }
 
-export type { Client, User, Salon, Business, VisitLog } from '../types';
+export async function getBusinessesByOwnerId(ownerId: string): Promise<Business[]> {
+  const { data, error } = await supabase
+    .from('businesses')
+    .select('id, owner_id, name, visit_goal, reward_description, created_at')
+    .eq('owner_id', ownerId)
+    .order('created_at', { ascending: true });
+  if (error || !data) return [];
+  return data as Business[];
+}
+
+export type { Client, User, Salon, Business, Operator, VisitLog } from '../types';

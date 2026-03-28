@@ -7,6 +7,7 @@ import Link from 'next/link';
 export default function OperatorLoginPage() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
+  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -19,16 +20,16 @@ export default function OperatorLoginPage() {
       const res = await fetch('/api/operator/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone }),
+        body: JSON.stringify({ phone, pin }),
         credentials: 'include',
       });
       const data = await res.json();
       if (!res.ok || data.error) {
-        throw new Error(data.error || 'Operator not found.');
+        throw new Error(data.error || 'Date invalide.');
       }
       router.push('/operator/dashboard');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Login failed.');
+      setError(e instanceof Error ? e.message : 'Login eșuat.');
     } finally {
       setLoading(false);
     }
@@ -59,7 +60,7 @@ export default function OperatorLoginPage() {
           </div>
           <p className="text-xs uppercase tracking-widest text-[var(--gold-dim)] mb-2">Operator</p>
           <h1 className="font-display text-3xl font-bold text-[var(--text)]">Dashboard Access</h1>
-          <p className="text-[var(--muted)] text-sm mt-1">Introdu numărul de telefon</p>
+          <p className="text-[var(--muted)] text-sm mt-1">Introdu telefonul și PIN-ul</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 fade-up delay-100">
@@ -73,6 +74,20 @@ export default function OperatorLoginPage() {
               placeholder="+40700000000"
               className="input-field w-full px-4 py-3 rounded-xl text-base"
               autoFocus
+            />
+          </div>
+
+          <div>
+            <label htmlFor="operator-pin" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">PIN</label>
+            <input
+              id="operator-pin"
+              type="password"
+              inputMode="numeric"
+              value={pin}
+              onChange={e => setPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
+              placeholder="••••"
+              className="input-field w-full px-4 py-3 rounded-xl text-base tracking-widest"
+              maxLength={8}
             />
           </div>
 
@@ -90,10 +105,10 @@ export default function OperatorLoginPage() {
             {loading ? (
               <>
                 <div className="w-5 h-5 border-2 border-[var(--dark)] border-t-transparent rounded-full animate-spin" />
-                Signing in…
+                Se conectează…
               </>
             ) : (
-              'Access Dashboard'
+              'Accesează Dashboard'
             )}
           </button>
         </form>
