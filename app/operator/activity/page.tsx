@@ -36,6 +36,7 @@ export default function ActivityPage() {
   const [events, setEvents] = useState<VisitEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [todayCount, setTodayCount] = useState(0);
+  const [businessName, setBusinessName] = useState('');
 
   useEffect(() => {
     let mounted = true;
@@ -46,10 +47,13 @@ export default function ActivityPage() {
       })
       .then(async data => {
         if (!mounted || !data) return;
+        setBusinessName(data.businessName ?? '');
+        const bizId: string = data.businessId ?? '';
 
         const { data: logs } = await supabase
           .from('visits_log')
-          .select('id, client_id, action, created_at, clients(name)')
+          .select('id, client_id, action, created_at, clients!inner(name, business_id)')
+          .filter('clients.business_id', 'eq', bizId)
           .order('created_at', { ascending: false })
           .limit(60);
 
@@ -86,7 +90,7 @@ export default function ActivityPage() {
 
       {/* Header */}
       <header className="p-6 pt-8 fade-up">
-        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">Operator</p>
+        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">{businessName || 'Operator'}</p>
         <h1 className="font-display text-3xl font-bold text-[var(--text)]">Activitate</h1>
         <p className="text-sm text-[var(--muted)] mt-1">
           {todayCount > 0

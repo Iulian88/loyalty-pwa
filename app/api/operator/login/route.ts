@@ -13,9 +13,6 @@ export async function POST(request: NextRequest) {
   const phone = (body.phone ?? '').trim();
   const pin = (body.pin ?? '').trim();
 
-  console.log('[OPERATOR LOGIN] phone received:', JSON.stringify(phone));
-  console.log('[OPERATOR LOGIN] pin length:', pin.length);
-
   if (!phone || !pin) {
     return NextResponse.json({ error: 'Phone and PIN are required' }, { status: 400 });
   }
@@ -26,23 +23,27 @@ export async function POST(request: NextRequest) {
     .eq('phone', phone)
     .single();
 
-  console.log('[OPERATOR LOGIN] DB lookup error:', error?.message ?? 'none');
-  console.log('[OPERATOR LOGIN] operator found:', operator ? `id=${operator.id} phone=${operator.phone}` : 'null');
-  console.log('[OPERATOR LOGIN] pin_hash in DB:', operator?.pin_hash ?? 'NULL');
-
   if (error || !operator) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
   const pinValid = await bcrypt.compare(pin, operator.pin_hash);
-  console.log('[OPERATOR LOGIN] bcrypt.compare result:', pinValid);
   if (!pinValid) {
     return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
   }
 
-  const sessionToken = signOperatorToken(operator.id, operator.business_id);
+  const { data: business } = await supabase
+    .from('businesses')
+    .select('name')
+    .eq('id', operator.business_id)
+    .single();
+
+  const operatorName = operator.name ?? '';
+  const businessName = business?.name ?? '';
+
+  const sessionToken = signOperatorToken(operator.id, operator.business_id, operatorName, businessName);
   const response = NextResponse.json(
-    { success: true, operator: { id: operator.id, name: operator.name, businessId: operator.business_id } },
+    { success: true, operator: { id: operator.id, name: operatorName, businessId: operator.business_id, businessName } },
     { headers: { 'Cache-Control': 'no-store' } }
   );
   response.cookies.set('operator_session', sessionToken, {

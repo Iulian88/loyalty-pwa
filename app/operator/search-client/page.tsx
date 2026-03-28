@@ -22,6 +22,8 @@ function SearchClientContent() {
   const [visitGoal, setVisitGoal] = useState(10);
   const [authChecking, setAuthChecking] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [operatorName, setOperatorName] = useState('');
+  const [businessName, setBusinessName] = useState('');
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -38,6 +40,8 @@ function SearchClientContent() {
         if (!mounted || !data) return;
         setOperatorId(data.data?.operatorId || '');
         setVisitGoal(data.visitGoal || 10);
+        setOperatorName(data.data?.operatorName ?? '');
+        setBusinessName(data.businessName ?? '');
         setAuthenticated(true);
         setAuthChecking(false);
         const biz = data.businessId || '';
@@ -162,7 +166,7 @@ function SearchClientContent() {
 
       {/* Header */}
       <header className="p-6 pt-8 fade-up">
-        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">Operator</p>
+        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">{businessName || 'Operator'}</p>
         <h1 className="font-display text-3xl font-bold text-[var(--text)]">Caută client</h1>
       </header>
 

@@ -20,6 +20,8 @@ export default function OperatorDashboardPage() {
   const [editingReward, setEditingReward] = useState(false);
   const [pendingRewardName, setPendingRewardName] = useState('');
   const [businessId, setBusinessId] = useState('');
+  const [operatorName, setOperatorName] = useState('');
+  const [businessName, setBusinessName] = useState('');
 
   // Derived from clients
   const total = clients.length;
@@ -46,6 +48,8 @@ export default function OperatorDashboardPage() {
         if (!mounted || !data) return;
         setVisitGoal(data.visitGoal ?? 10);
         setBusinessId(data.businessId ?? '');
+        setOperatorName(data.data?.operatorName ?? '');
+        setBusinessName(data.businessName ?? '');
         setAuthenticated(true);
         setAuthChecking(false);
       })
@@ -110,8 +114,8 @@ export default function OperatorDashboardPage() {
       {/* Header */}
       <header className="flex items-center justify-between p-6 pt-8">
         <div className="fade-up">
-          <p className="text-xs uppercase tracking-widest text-[var(--muted)]">Fidelizat</p>
-          <h1 className="font-display text-2xl font-semibold text-[var(--text)]">Operator Panel</h1>
+          <p className="text-xs uppercase tracking-widest text-[var(--muted)]">{businessName || 'Fidelizat'}</p>
+          <h1 className="font-display text-2xl font-semibold text-[var(--text)]">{operatorName || 'Operator Panel'}</h1>
         </div>
         <button
           onClick={handleLogout}

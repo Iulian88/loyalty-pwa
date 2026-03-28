@@ -19,7 +19,13 @@ export async function GET(request: NextRequest) {
   const visitGoal = business?.visit_goal ?? VISIT_GOAL;
 
   return NextResponse.json(
-    { success: true, visitGoal, businessId: session.businessId, data: { operatorId: session.operatorId } },
+    {
+      success: true,
+      visitGoal,
+      businessId: session.businessId,
+      businessName: session.businessName,
+      data: { operatorId: session.operatorId, operatorName: session.operatorName },
+    },
     { headers: noStore }
   );
 }

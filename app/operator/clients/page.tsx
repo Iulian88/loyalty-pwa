@@ -17,6 +17,8 @@ export default function ClientsPage() {
   const [clients, setClients] = useState<Client[]>([]);
   const [visitGoal, setVisitGoal] = useState(10);
   const [operatorId, setOperatorId] = useState('');
+  const [operatorName, setOperatorName] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [loading, setLoading] = useState(true);
   const [sort, setSort] = useState<SortKey>('newest');
   const [filter, setFilter] = useState<FilterKey>('all');
@@ -36,6 +38,8 @@ export default function ClientsPage() {
         const vg: number = data.visitGoal ?? 10;
         setVisitGoal(vg);
         setOperatorId(data.data?.operatorId || '');
+        setOperatorName(data.data?.operatorName ?? '');
+        setBusinessName(data.businessName ?? '');
         const { data: clientsData } = await supabase
           .from('clients')
           .select('*')
@@ -115,7 +119,7 @@ export default function ClientsPage() {
       )}
 
       <header className="p-6 pt-8 fade-up">
-        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">Operator</p>
+        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">{businessName || 'Operator'}</p>
         <h1 className="font-display text-3xl font-bold text-[var(--text)]">{"Clien\u021bi"}</h1>
         <p className="text-sm text-[var(--muted)] mt-1">{clients.length} {"clien\u021bi \u00eenregistra\u021bi"}</p>
       </header>

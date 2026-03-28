@@ -26,6 +26,8 @@ export default function SubscriptionsPage() {
   const [activatedSub, setActivatedSub] = useState<{ sessions: number; used: number } | null>(null);
   const [authChecking, setAuthChecking] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
+  const [operatorName, setOperatorName] = useState('');
+  const [businessName, setBusinessName] = useState('');
 
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -42,6 +44,8 @@ export default function SubscriptionsPage() {
         if (!mounted || !data) return;
         setAuthenticated(true);
         setAuthChecking(false);
+        setOperatorName(data.data?.operatorName ?? '');
+        setBusinessName(data.businessName ?? '');
         loadClients(data.businessId || '');
       })
       .catch(() => { if (mounted) { setAuthChecking(false); router.replace('/operator/login'); } });
@@ -166,7 +170,7 @@ export default function SubscriptionsPage() {
 
       {/* Header */}
       <header className="p-6 pt-8 fade-up">
-        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">Operator</p>
+        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">{businessName || 'Operator'}</p>
         <h1 className="font-display text-3xl font-bold text-[var(--text)]">Abonament</h1>
         <p className="text-sm text-[var(--muted)] mt-1">Gestionează pachete preplătite</p>
       </header>

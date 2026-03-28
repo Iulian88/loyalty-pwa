@@ -19,6 +19,8 @@ export default function ScanQRPage() {
   const [operatorId, setOperatorId] = useState<string>('');
   const [visitGoal, setVisitGoal] = useState(0);
   const [businessId, setBusinessId] = useState('');
+  const [operatorName, setOperatorName] = useState('');
+  const [businessName, setBusinessName] = useState('');
   const [processingScan, setProcessingScan] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
@@ -35,6 +37,8 @@ export default function ScanQRPage() {
         setOperatorId(data.data?.operatorId || '');
         setVisitGoal(data.visitGoal);
         setBusinessId(data.businessId ?? '');
+        setOperatorName(data.data?.operatorName ?? '');
+        setBusinessName(data.businessName ?? '');
         setAuthenticated(true);
         setAuthChecking(false);
       })
@@ -143,7 +147,7 @@ export default function ScanQRPage() {
 
       {/* Header */}
       <header className="p-6 pt-8 fade-up">
-        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">Operator</p>
+        <p className="text-xs uppercase tracking-widest text-[var(--muted)] mb-1">{businessName || 'Operator'}</p>
         <h1 className="font-display text-3xl font-bold text-[var(--text)]">Scanează codul QR</h1>
         <p className="text-sm text-[var(--muted)] mt-1">Îndreaptă camera spre codul QR al clientului</p>
       </header>

@@ -142,11 +142,18 @@ export function saveClientSession(client: Client) {
 export interface OperatorSession {
   operatorId: string;
   businessId: string;
+  operatorName: string;
+  businessName: string;
 }
 
-export function signOperatorToken(operatorId: string, businessId: string): string {
+export function signOperatorToken(
+  operatorId: string,
+  businessId: string,
+  operatorName: string,
+  businessName: string
+): string {
   return jwt.sign(
-    { operatorId, businessId, role: 'operator' },
+    { operatorId, businessId, operatorName, businessName, role: 'operator' },
     getOperatorJwtSecret(),
     { expiresIn: '1d' }
   );
@@ -157,9 +164,14 @@ export function verifyOperatorToken(token: string): OperatorSession | null {
     const decoded = jwt.verify(
       token,
       getOperatorJwtSecret()
-    ) as { operatorId: string; businessId: string; role: string };
+    ) as { operatorId: string; businessId: string; operatorName?: string; businessName?: string; role: string };
     if (decoded.role !== 'operator' || !decoded.businessId) return null;
-    return { operatorId: decoded.operatorId, businessId: decoded.businessId };
+    return {
+      operatorId: decoded.operatorId,
+      businessId: decoded.businessId,
+      operatorName: decoded.operatorName ?? '',
+      businessName: decoded.businessName ?? '',
+    };
   } catch {
     return null;
   }
