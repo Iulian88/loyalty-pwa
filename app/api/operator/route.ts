@@ -11,18 +11,17 @@ const supabase = createClient(
 export async function GET(req: NextRequest) {
   const sessionToken = req.cookies.get('operator_session')?.value;
   if (!sessionToken) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  const operatorId = verifyOperatorToken(sessionToken);
-  if (!operatorId) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+  const operatorSession = verifyOperatorToken(sessionToken);
+  if (!operatorSession) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
 
   const { searchParams } = new URL(req.url);
   const phone = searchParams.get('phone');
-  const salonId = searchParams.get('business_id');
 
-  if (!phone || !salonId) {
-    return NextResponse.json({ error: 'phone and business_id are required' }, { status: 400 });
+  if (!phone) {
+    return NextResponse.json({ error: 'phone is required' }, { status: 400 });
   }
 
-  const client = await searchClientByPhone(supabase, phone, salonId);
+  const client = await searchClientByPhone(supabase, phone, operatorSession.businessId);
   if (!client) {
     return NextResponse.json({ error: 'Client not found' }, { status: 404 });
   }

@@ -10,17 +10,16 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401, headers: noStore });
   }
 
-  const operatorId = verifyOperatorToken(token);
-  if (!operatorId) {
+  const session = verifyOperatorToken(token);
+  if (!session) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401, headers: noStore });
   }
 
-  const businessId = process.env.DEFAULT_BUSINESS_ID;
-  const business = businessId ? await getBusinessById(businessId) : null;
+  const business = await getBusinessById(session.businessId);
   const visitGoal = business?.visit_goal ?? VISIT_GOAL;
 
   return NextResponse.json(
-    { success: true, visitGoal, data: { operatorId } },
+    { success: true, visitGoal, businessId: session.businessId, data: { operatorId: session.operatorId } },
     { headers: noStore }
   );
 }

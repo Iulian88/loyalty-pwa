@@ -139,22 +139,27 @@ export function saveClientSession(client: Client) {
 
 // ── Operator session helpers ──────────────────────────────────────────────────
 
-export function signOperatorToken(): string {
+export interface OperatorSession {
+  operatorId: string;
+  businessId: string;
+}
+
+export function signOperatorToken(operatorId: string, businessId: string): string {
   return jwt.sign(
-    { operatorId: 'operator', role: 'operator' },
+    { operatorId, businessId, role: 'operator' },
     getOperatorJwtSecret(),
     { expiresIn: '1d' }
   );
 }
 
-export function verifyOperatorToken(token: string): string | null {
+export function verifyOperatorToken(token: string): OperatorSession | null {
   try {
     const decoded = jwt.verify(
       token,
       getOperatorJwtSecret()
-    ) as { operatorId: string; role: string };
-    if (decoded.role !== 'operator') return null;
-    return decoded.operatorId;
+    ) as { operatorId: string; businessId: string; role: string };
+    if (decoded.role !== 'operator' || !decoded.businessId) return null;
+    return { operatorId: decoded.operatorId, businessId: decoded.businessId };
   } catch {
     return null;
   }

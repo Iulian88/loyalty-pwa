@@ -18,6 +18,7 @@ export default function ScanQRPage() {
   const [scannerReady, setScannerReady] = useState(false);
   const [operatorId, setOperatorId] = useState<string>('');
   const [visitGoal, setVisitGoal] = useState(0);
+  const [businessId, setBusinessId] = useState('');
   const [processingScan, setProcessingScan] = useState(false);
   const [authChecking, setAuthChecking] = useState(true);
   const [authenticated, setAuthenticated] = useState(false);
@@ -33,6 +34,7 @@ export default function ScanQRPage() {
         if (!mounted || !data) return;
         setOperatorId(data.data?.operatorId || '');
         setVisitGoal(data.visitGoal);
+        setBusinessId(data.businessId ?? '');
         setAuthenticated(true);
         setAuthChecking(false);
       })
@@ -117,7 +119,7 @@ export default function ScanQRPage() {
       const match = text.match(/\/client\/([a-f0-9-]+)/i);
       if (match) clientId = match[1];
 
-      const found = await getClientById(clientId);
+      const found = await getClientById(clientId, businessId || undefined);
       setClient(found);
     } catch {
       setError('Cod QR invalid sau clientul nu a fost găsit. Încearcă din nou.');

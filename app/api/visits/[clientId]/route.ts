@@ -39,18 +39,15 @@ export async function POST(request: NextRequest, { params }: { params: { clientI
   if (!sessionToken) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
-  const operatorId = verifyOperatorToken(sessionToken);
-  if (!operatorId) {
+  const operatorSession = verifyOperatorToken(sessionToken);
+  if (!operatorSession) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
   try {
     const body = await request.json();
     const { action } = body;
-    const businessId = process.env.DEFAULT_BUSINESS_ID;
-    if (!businessId) {
-      throw new Error('DEFAULT_BUSINESS_ID is not set');
-    }
+    const { operatorId, businessId } = operatorSession;
     if (!action || !['add', 'remove'].includes(action)) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }

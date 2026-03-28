@@ -13,17 +13,14 @@ export async function POST(req: NextRequest) {
   if (!sessionToken) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
-  const operatorId = verifyOperatorToken(sessionToken);
-  if (!operatorId) {
+  const operatorSession = verifyOperatorToken(sessionToken);
+  if (!operatorSession) {
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 
   try {
     const { clientId, action } = await req.json();
-    const businessId = process.env.DEFAULT_BUSINESS_ID;
-    if (!businessId) {
-      throw new Error('DEFAULT_BUSINESS_ID is not set');
-    }
+    const { operatorId, businessId } = operatorSession;
 
     if (!clientId || ![-1, 0, 1, 2].includes(action)) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 });

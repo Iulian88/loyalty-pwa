@@ -31,8 +31,11 @@ export async function GET(
   }
 
   try {
-    const businessId = process.env.DEFAULT_BUSINESS_ID;
-    if (!businessId) throw new Error('DEFAULT_BUSINESS_ID is not set');
+    // Determine businessId scope: use operator's businessId if present, otherwise skip scoping for own-client read
+    let businessId: string | undefined;
+    if (operatorToken && verifyOperatorToken(operatorToken)) {
+      businessId = verifyOperatorToken(operatorToken)!.businessId;
+    }
     const client = await getClientById(params.id, businessId);
     return NextResponse.json({
       id: client.id,

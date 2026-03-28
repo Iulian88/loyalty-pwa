@@ -40,18 +40,19 @@ function SearchClientContent() {
         setVisitGoal(data.visitGoal || 10);
         setAuthenticated(true);
         setAuthChecking(false);
-        loadAll(data.visitGoal || 10, searchParams.get('phone') || '');
+        const biz = data.businessId || '';
+        loadAll(data.visitGoal || 10, searchParams.get('phone') || '', biz);
       })
       .catch(() => { if (mounted) { setAuthChecking(false); router.replace('/operator/login'); } });
     return () => { mounted = false; };
   }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const loadAll = async (goal: number, initialPhone: string) => {
+  const loadAll = async (goal: number, initialPhone: string, bizId: string) => {
     try {
       const { data, error } = await supabase
         .from('clients')
         .select('*')
-        .eq('business_id', process.env.NEXT_PUBLIC_DEFAULT_BUSINESS_ID || '00000000-0000-0000-0000-000000000001');
+        .eq('business_id', bizId);
       if (error) throw error;
       const sorted = (data || []).sort((a: Client, b: Client) => b.visits - a.visits);
       setAllClients(sorted);

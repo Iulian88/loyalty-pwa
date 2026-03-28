@@ -6,7 +6,7 @@ import Link from 'next/link';
 
 export default function OperatorLoginPage() {
   const router = useRouter();
-  const [password, setPassword] = useState('');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -19,12 +19,12 @@ export default function OperatorLoginPage() {
       const res = await fetch('/api/operator/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
+        body: JSON.stringify({ phone }),
         credentials: 'include',
       });
       const data = await res.json();
       if (!res.ok || data.error) {
-        throw new Error(data.error || 'Invalid password.');
+        throw new Error(data.error || 'Operator not found.');
       }
       router.push('/operator/dashboard');
     } catch (e: unknown) {
@@ -59,18 +59,18 @@ export default function OperatorLoginPage() {
           </div>
           <p className="text-xs uppercase tracking-widest text-[var(--gold-dim)] mb-2">Operator</p>
           <h1 className="font-display text-3xl font-bold text-[var(--text)]">Dashboard Access</h1>
-          <p className="text-[var(--muted)] text-sm mt-1">Doar pentru operatori</p>
+          <p className="text-[var(--muted)] text-sm mt-1">Introdu numărul de telefon</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 fade-up delay-100">
           <div>
-            <label htmlFor="operator-password" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">Password</label>
+            <label htmlFor="operator-phone" className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">Telefon</label>
             <input
-              id="operator-password"
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              placeholder="••••••••"
+              id="operator-phone"
+              type="tel"
+              value={phone}
+              onChange={e => setPhone(e.target.value)}
+              placeholder="+40700000000"
               className="input-field w-full px-4 py-3 rounded-xl text-base"
               autoFocus
             />

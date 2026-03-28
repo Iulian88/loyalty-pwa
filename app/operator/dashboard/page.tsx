@@ -8,8 +8,6 @@ import { supabase } from '@/lib/supabase';
 import NavBar from '@/components/NavBar';
 import type { Client } from '@/types';
 
-const DEFAULT_BUSINESS_ID = process.env.NEXT_PUBLIC_DEFAULT_BUSINESS_ID || '00000000-0000-0000-0000-000000000001';
-
 export default function OperatorDashboardPage() {
   const router = useRouter();
   const [authenticated, setAuthenticated] = useState(false);
@@ -21,6 +19,7 @@ export default function OperatorDashboardPage() {
   const [showRewardConfig, setShowRewardConfig] = useState(false);
   const [editingReward, setEditingReward] = useState(false);
   const [pendingRewardName, setPendingRewardName] = useState('');
+  const [businessId, setBusinessId] = useState('');
 
   // Derived from clients
   const total = clients.length;
@@ -46,6 +45,7 @@ export default function OperatorDashboardPage() {
       .then(data => {
         if (!mounted || !data) return;
         setVisitGoal(data.visitGoal ?? 10);
+        setBusinessId(data.businessId ?? '');
         setAuthenticated(true);
         setAuthChecking(false);
       })
@@ -54,12 +54,13 @@ export default function OperatorDashboardPage() {
   }, [router]);
 
   const fetchClients = useCallback(async () => {
-    const { data, error } = await supabase.from('clients').select('*').eq('business_id', DEFAULT_BUSINESS_ID);
+    if (!businessId) return;
+    const { data, error } = await supabase.from('clients').select('*').eq('business_id', businessId);
     if (!error) setClients(data || []);
-  }, []);
+  }, [businessId]);
 
   useEffect(() => {
-    if (!authenticated) return;
+    if (!authenticated || !businessId) return;
     fetchClients();
     const id = setInterval(fetchClients, 5000);
     return () => clearInterval(id);

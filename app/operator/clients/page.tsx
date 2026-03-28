@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import NavBar from '@/components/NavBar';
 import ClientCard from '@/components/ClientCard';
 
-const DEFAULT_BUSINESS_ID = process.env.NEXT_PUBLIC_DEFAULT_BUSINESS_ID || '00000000-0000-0000-0000-000000000001';
+// DEFAULT_BUSINESS_ID removed — businessId now comes from operator session
 
 type SortKey = 'newest' | 'visits' | 'closest';
 type FilterKey = 'all' | 'reward' | 'near' | 'inactive';
@@ -39,7 +39,7 @@ export default function ClientsPage() {
         const { data: clientsData } = await supabase
           .from('clients')
           .select('*')
-          .eq('business_id', DEFAULT_BUSINESS_ID);
+          .eq('business_id', data.businessId || '');
         if (mounted && clientsData) setClients(clientsData as Client[]);
         if (mounted) setLoading(false);
       })
