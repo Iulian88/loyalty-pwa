@@ -11,10 +11,8 @@ export async function GET(request: NextRequest) {
 
     const session = getSession(token);
     if (!session) {
-      console.log('[SESSION] invalid token');
       return NextResponse.json({ error: 'Invalid session' }, { status: 401 });
     }
-    console.log('[SESSION] decoded userId:', session.userId, 'name:', session.name);
 
     // Try to resolve a User from the JWT's userId
     const user = await getUserById(session.userId);
@@ -31,7 +29,13 @@ export async function GET(request: NextRequest) {
     }
 
     const sessionUser = user ?? { id: session.userId, name: session.name, phone: session.phone };
-    console.log('[SESSION] user from DB:', user?.id ?? 'null (using JWT fallback)', '| client:', client?.id ?? 'none');
+
+    // If no user found in DB and no legacy client found, the JWT refers to a
+    // deleted user (e.g. after a DB reset). Force re-login rather than returning
+    // fake user data that will cause FK violations downstream.
+    if (!user && !client) {
+      return NextResponse.json({ error: 'Session expired. Please log in again.' }, { status: 401 });
+    }
 
     if (!client) {
       // Authenticated user with no cards yet — return user only

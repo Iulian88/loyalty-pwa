@@ -802,4 +802,317 @@ psql "postgresql://postgres:<password>@<host>:5432/postgres" < backup_2026-03-27
 | Checkpoint | Branch | Commit | State |
 |---|---|---|---|
 | Pre-migration backup | `pre-multitenant-migration` | `a461fe7` | All single-business code, fully working |
-| Production (latest) | `main` | `a461fe7` | Currently same as backup |
+| Multi-tenant refactor + multi-card UX | `main` | `3b12d45` (tag: v0.1-multibusiness) | users table, cards page, per-business config |
+| Operator isolation (phone login + JWT businessId) | `main` | `d16d5d6` | All API routes scoped by businessId |
+| Owner SaaS model (OWNER→BUSINESS→OPERATOR) | `main` | `47d58e0` | PIN login, owner dashboard, operator CRUD |
+| Debug logs (temporary — removed next commit) | `main` | `7473d63` | Diagnostic only |
+| **Current production** | `main` | `12f18b6` | operatorName+businessName in JWT+session+UI; activity isolated |
+
+---
+
+---
+
+# ══════════════════════════════════════════════════════════════
+# LIVE SYSTEM STATE — Updated 2026-03-28
+# (Previous sections above reflect state at commit a461fe7.
+#  This section documents the CURRENT architecture.)
+# ══════════════════════════════════════════════════════════════
+
+---
+
+## CURRENT SYSTEM STATE
+
+**Current commit:** `12f18b6`  
+**Date:** 2026-03-28  
+**Deployment:** Vercel (auto-deploy from `main`)
+
+### What changed since Section 1–10 above was written
+
+The architecture has been substantially upgraded across 10+ commits. The sections above (1–10) are now **outdated** in the following areas:
+
+| Topic | Old (documented above) | Current (actual) |
+|---|---|---|
+| Operator login | Single shared `OPERATOR_PASSWORD` env var | Phone + PIN (bcrypt) per operator row in DB |
+| Operator JWT | `{ sub: uuid, role: 'operator' }` | `{ operatorId, businessId, operatorName, businessName, role: 'operator' }` |
+| Operator session API | Returns `{ operatorId }` | Returns `{ operatorId, operatorName, businessId, businessName, visitGoal }` |
+| Client identity | JWT `{ id }` pointing to `clients.id` | JWT `{ userId }` pointing to `users.id` (separate table) |
+| Database | `salons`, `clients`, `visits_log` | `users`, `clients`, `businesses`, `operators`, `visits_log` |
+| Multi-tenancy | `DEFAULT_BUSINESS_ID` env var in all routes | `businessId` from JWT — fully dynamic |
+| Owner system | Not implemented | `users` can own `businesses`; owner UI + CRUD exists |
+| Per-business config | Global env var `LOYALTY_VISIT_GOAL` | `businesses.visit_goal` and `businesses.reward_description` per row |
+| `supabase-schema.sql` | Reflects current schema | **Severely outdated** — still shows `salons`/`salon_id`, missing 4 tables |
+
+---
+
+## ARCHITECTURE SUMMARY (current)
+
+### Database Tables
+
+```
+users
+  id          UUID PK
+  phone       TEXT UNIQUE NOT NULL
+  name        TEXT NOT NULL
+  created_at  TIMESTAMPTZ
+
+businesses
+  id                  UUID PK
+  owner_id            UUID FK → users.id (SET NULL on delete)
+  name                TEXT NOT NULL
+  visit_goal          INT
+  reward_description  TEXT
+  created_at          TIMESTAMPTZ
+
+clients  (loyalty cards — one row = one card at one business)
+  id              UUID PK
+  user_id         UUID FK → users.id   ← ties card to user
+  business_id     UUID FK → businesses.id
+  name            TEXT NOT NULL
+  phone           TEXT NOT NULL
+  visits          INT DEFAULT 0
+  reward_claimed  BOOLEAN DEFAULT false
+  claimed_at      TIMESTAMPTZ
+  created_at      TIMESTAMPTZ
+  UNIQUE (phone, business_id)
+
+operators
+  id          UUID PK
+  business_id UUID FK → businesses.id ON DELETE CASCADE
+  phone       TEXT NOT NULL
+  name        TEXT NOT NULL DEFAULT ''
+  pin_hash    TEXT NOT NULL DEFAULT ''   ← bcrypt(rounds=12)
+  created_at  TIMESTAMPTZ
+  UNIQUE (phone, business_id)
+
+visits_log
+  id          UUID PK
+  client_id   UUID FK → clients.id ON DELETE CASCADE
+  operator_id TEXT NOT NULL   ← operator UUID from JWT
+  action      INT NOT NULL    ← 1=add, -1=remove, 0=reset, 2=claim reward
+  created_at  TIMESTAMPTZ
+```
+
+### Relationship Diagram
+
+```
+users (owners) ──owner_id──▶ businesses ──business_id──▶ clients ──client_id──▶ visits_log
+                                  │                           ▲
+                                  └──business_id──▶ operators  │
+                                                               │
+users (clients) ──user_id──────────────────────────────────────┘
+```
+
+### Authentication Architecture
+
+**Client auth** — cookie `token` (7 days, httpOnly)  
+JWT payload: `{ userId, name, phone }`  
+Identity resolves: `users` table by `userId`  
+Card resolves: `clients` table by `user_id`
+
+**Operator auth** — cookie `operator_session` (24h, httpOnly)  
+JWT payload: `{ operatorId, businessId, operatorName, businessName, role: 'operator' }`  
+Login: `POST /api/operator/login` — phone + PIN, bcrypt verify, fetches operator + business name  
+Session: `GET /api/operator/session` — returns full context including `visitGoal` from DB
+
+**Owner auth** — reuses client `token` cookie  
+Session decoded: `{ userId }` → `businesses WHERE owner_id = userId` ownership check  
+All owner routes verify ownership via `businesses.owner_id` before any write
+
+### Migrations (run order)
+
+| File | What it does | Status |
+|---|---|---|
+| `supabase-schema.sql` | Base tables (`salons`, `clients`, `visits_log`) — **OUTDATED** | Run once at project start (old schema) |
+| `migrations/002_users_table.sql` | Add `users` table; add `user_id` to `clients`; backfill | Must be run |
+| `migrations/003_operators_table.sql` | Add `operators` table | Must be run |
+| `migrations/004_owner_model.sql` | Add `owner_id` to `businesses`; add `pin_hash` to `operators` | Must be run |
+
+> ⚠️ `supabase-schema.sql` needs a full rewrite to match the current schema. Do not run it on a fresh DB without also running all migrations — it will produce an inconsistent state.
+
+### API Route Map (current)
+
+| Route | Method | Auth | Purpose |
+|---|---|---|---|
+| `/api/auth/register` | POST | none | Create user (`users` table), set `token` cookie |
+| `/api/auth/login` | POST | none | Phone lookup in `users`, legacy fallback to `clients`; set `token` cookie |
+| `/api/auth/session` | GET | `token` | Return user + active card + business config |
+| `/api/auth/logout` | POST | none | Clear `token` + `operator_session` cookies |
+| `/api/operator/login` | POST | none | Phone+PIN → bcrypt verify → set `operator_session` cookie with full context |
+| `/api/operator/session` | GET | `operator_session` | Return `{ operatorId, operatorName, businessId, businessName, visitGoal }` |
+| `/api/operator` | GET | `operator_session` | Search client by phone, scoped to `session.businessId` |
+| `/api/clients/[id]` | GET | `operator_session` or `token` | Fetch single client, scoped by `businessId` |
+| `/api/visits` | POST | `operator_session` | Add/remove/reset/claim — all scoped by `session.businessId` |
+| `/api/visits/[clientId]` | GET/POST | `operator_session` / `token` | Visit history or per-client action |
+| `/api/my-cards` | GET | `token` | All loyalty cards for current user |
+| `/api/my-business-options` | GET | `token` | Businesses available to add a card for |
+| `/api/add-card` | POST | `token` | Add a new loyalty card at a business — ⚠️ see risks |
+| `/api/businesses` | GET | none | Public list of businesses |
+| `/api/business/create` | POST | `token` | Create a new business (owner becomes `owner_id`) |
+| `/api/owner/businesses` | GET | `token` | List businesses owned by current user |
+| `/api/owner/operators` | GET/POST | `token` | List or create operators for an owned business |
+| `/api/owner/operators/[id]` | DELETE | `token` | Delete operator (ownership verified) |
+
+---
+
+## KNOWN ISSUES / RISKS
+
+### CRITICAL
+
+| # | Issue | Location | Impact |
+|---|---|---|---|
+| 1 | **`supabase-schema.sql` is completely outdated** | `supabase-schema.sql` | Running it on a fresh DB misses `users`, `businesses`, `operators`; uses old `salons`/`salon_id` names. Fresh recovery requires running it + all 4 migrations in order. |
+| 2 | **`add-card` businessId unverified** | `/api/add-card/route.ts` | `businessId` comes from the client request body. Any authenticated user can POST with any `businessId`. No check that the business actually exists and is accepting new cards. Should validate against `businesses` table. |
+| 3 | **No rate limiting on auth/login endpoints** | All login routes | An attacker can brute-force operator PINs (4–6 digits) with no throttling. No lockout, no CAPTCHA, no delay. |
+| 4 | **Debug `console.log` statements in auth/register + auth/login routes** | `app/api/auth/register/route.ts`, `app/api/auth/login/route.ts`, `app/api/auth/session/route.ts` | Logs phone numbers and user IDs to Vercel function logs. Privacy concern and log spam. |
+
+### MEDIUM RISK
+
+| # | Issue | Location | Impact |
+|---|---|---|---|
+| 5 | **`visits_log` has no direct `business_id`** | DB schema | Tenant isolation for activity log depends on `client_id → clients.business_id` join. Any query that forgets this join leaks cross-tenant data. Activity page now fixed (inner join), but future queries must remember this pattern. |
+| 6 | **`operator.pin_hash` defaults to `''`** | `migrations/004_owner_model.sql` | Operators added before migration 004 have `pin_hash = ''`. `bcrypt.compare(pin, '')` always returns `false`, silently locking out those operators. Must explicitly SET pin hash for each existing operator. |
+| 7 | **RLS is permissive (allows all)** | Supabase RLS policies | All tables have RLS enabled but policies allow full access. Real enforcement happens in API routes using the service role key. If the anon key is ever used for writes (client-side), there is no database-level protection. |
+| 8 | **Client-side Supabase queries use anon key** | All operator UI pages | Pages query `clients` and `visits_log` directly with the anon key, filtered by `businessId` from session. This is safe only because RLS allows all + the filter is applied in JS. A determined user could bypass the filter. Proper fix: route all reads through API routes. |
+| 9 | **Double-import bug in owner operators route** | `/api/owner/operators/route.ts` line 18 | `const { getSession: _gs } = await import('@/lib/auth')` re-imports `getSession` dynamically. It works but is a code smell and bypasses module caching. Should use the top-level import directly. |
+| 10 | **Legacy fallback in auth/login creates confusion** | `/api/auth/login/route.ts` | Login tries `users` first, then falls back to `clients` for pre-migration rows. The fallback path does not verify PIN even if `pin_hash` is set on the legacy client. Users from before migration 002 with a PIN set will log in without PIN verification after migration. |
+
+### LOW RISK
+
+| # | Issue | Location | Impact |
+|---|---|---|---|
+| 11 | **Operator phone uniqueness is per-business** | `operators` table | Same phone can be an operator at multiple businesses. This is correct design but means the operator login must account for which business — currently phone lookup returns the first match only via `.single()`, which would return an error if phone exists at two businesses. Safe today (single business per operator), needs handling at scale. |
+| 12 | **`NEXT_PUBLIC_DEFAULT_BUSINESS_ID` env var still in `.env.local`** | `.env.local` | No longer used in any code (all routes use JWT-scoped businessId). Leftover from old architecture. Remove to avoid confusion. |
+| 13 | **`reward_name` stored in `localStorage`** | Operator dashboard | `localStorage` is per-device, per-browser. Not persisted in DB. Data loss on new device or cleared storage. Should be stored in `businesses.reward_description`. |
+
+---
+
+## PROGRESS
+
+```
+Core System        ████████████████░░░░ 80%   Registration, login, visits, QR, rewards all working
+Multi-tenancy      ██████████████░░░░░░ 70%   Operator scope ✅ | Client scope partial | Unverified writes ⚠️
+Security           ██████░░░░░░░░░░░░░░ 30%   No rate limiting, permissive RLS, debug logs, anon key reads
+Owner System       ████████░░░░░░░░░░░░ 40%   CRUD routes + UI exist; ownership verified; no billing/plans
+Commercial Ready   ██████░░░░░░░░░░░░░░ 30%   Can demo; not safe for production with real businesses yet
+
+TOTAL: ~50%
+```
+
+---
+
+## TODAY PROGRESS — 2026-03-28
+
+### What was implemented
+- `OperatorSession` interface expanded: `{ operatorId, businessId, operatorName, businessName }`
+- `signOperatorToken()` now accepts and embeds `operatorName` + `businessName` into JWT
+- `verifyOperatorToken()` now reads all four fields back (with empty-string fallback for old tokens)
+- `POST /api/operator/login`: after PIN verification, fetches `businesses.name`, calls updated `signOperatorToken`
+- `GET /api/operator/session`: returns `businessName`, `data.operatorName` in response body
+- All 6 operator UI pages updated: `dashboard`, `clients`, `scan-qr`, `search-client`, `subscriptions`, `activity`
+  - State variables `operatorName`, `businessName` added
+  - Headers now show business name (e.g. "Salon Maria") instead of hardcoded "Operator"
+- `activity/page.tsx`: fixed cross-tenant leak — query now uses `clients!inner(name, business_id)` with `.filter('clients.business_id', 'eq', bizId)`
+- Debug `console.log` statements removed from `app/api/operator/login/route.ts`
+
+### Problems solved
+- Operators could not tell which business they were logged into (UI showed "Operator" everywhere)
+- Activity page showed all visits_log entries globally, not filtered by business
+
+### Decisions made
+- `operatorName`/`businessName` embedded in JWT at login time (not re-fetched per session call)
+  — tradeoff: stale name if business renames; acceptable since renaming is rare
+- Empty-string fallback in `verifyOperatorToken` for tokens signed before this change (backwards compat)
+
+### Risks surfaced
+- `operator.phone` uniqueness is per-business: `.single()` in login returns error if operator is registered at 2 businesses — not a current concern but noted
+
+---
+
+## SYSTEM AUDIT
+
+### Is data isolation safe for operators?
+
+**YES for API writes.** All visit mutation routes (`/api/visits`, `/api/visits/[clientId]`, `/api/operator`) extract `businessId` from the JWT server-side. An operator cannot affect clients of another business.
+
+**PARTIALLY for reads.** Operator UI pages query Supabase directly from the browser using the anon key, filtered by `businessId` from session. The filter is applied correctly in all current pages. However, anon key + permissive RLS means a motivated user with browser devtools could remove the filter and see all clients in the DB across all businesses.
+
+**YES for activity log.** Fixed today — `activity/page.tsx` now uses an inner join on `clients.business_id`.
+
+### Is data isolation safe for clients?
+
+**PARTIALLY.** Client session knows the `userId` but not which `business_id` they're scoped to. The session route resolves the "active card" by `user_id`. Add-card endpoint (`/api/add-card`) accepts `businessId` from the request body without server-side verification — a client could add a card to any business ID, including one that doesn't exist or belongs to a competitor.
+
+### Is the owner system secure?
+
+**YES for read/write operations.** Every owner route verifies ownership via `businesses.owner_id = session.userId` before returning or modifying data. An owner cannot see or modify another owner's operators.
+
+**NOT YET for business creation.** `POST /api/business/create` creates a business with `owner_id = session.userId`. There is no plan tier check — any registered user can create unlimited businesses. This is acceptable in early development but needs a subscription/plan gate before commercial launch.
+
+### Can this system be used by real businesses safely?
+
+**NOT YET.** The following must be addressed first:
+1. Remove debug `console.log` statements (logs phone numbers)
+2. Add rate limiting to operator login (4-digit PIN is brute-forceable in ~10,000 requests)
+3. Fix `add-card` to verify `businessId` against `businesses` table
+4. `supabase-schema.sql` must be rewritten to match actual schema (recovery risk)
+5. Set proper RLS policies on `clients` and `operators` tables
+
+---
+
+## NEXT STEPS
+
+### PRIORITY 1 — CRITICAL (do before any real user data)
+
+1. **Remove debug `console.log` from auth routes** (`register`, `login`, `session`)
+   - These log phone numbers and user UUIDs to Vercel — privacy violation
+2. **Add rate limiting to operator login**
+   - Use Vercel Edge middleware or an in-memory counter + `429` response
+   - At minimum: exponential delay after 3 failed attempts per IP
+3. **Fix `add-card` businessId validation**
+   - Verify that `businessId` from request body exists in `businesses` table before inserting
+4. **Rewrite `supabase-schema.sql`**
+   - Replace content with the current complete schema: `users`, `businesses`, `clients`, `operators`, `visits_log`
+   - Document migration order clearly
+
+### PRIORITY 2 — Security & Data Integrity
+
+5. **Set restrictive RLS policies on sensitive tables**
+   - `operators`: only `service_role` can read/write (no anon access needed)
+   - `clients`: anon can read own rows only (or route all reads through API)
+6. **Route operator reads through API**
+   - Operator pages currently query Supabase anon client directly for `clients` list
+   - Move these to `/api/operator/clients` server route — eliminates anon key exposure
+7. **Fix legacy login fallback PIN bypass** (Issue #10 above)
+   - If legacy client has `pin_hash`, verify it even on the fallback path
+8. **Store `reward_name` in `businesses.reward_description`** instead of `localStorage`
+
+### PRIORITY 3 — Features & Commercial Readiness
+
+9. **Owner dashboard: show live stats per business**
+   - Current owner dashboard is skeleton; needs client count, visit count, operator count
+10. **Operator visits redirect page** (`/operator/visits` → `/operator/dashboard`)
+    - Already exists as a stub; may confuse users
+11. **Plan/tier system for owner** — gate business creation behind subscription
+12. **`supabase-schema.sql` rewrite** — complete schema for clean fresh installs
+
+---
+
+## IMPROVEMENTS
+
+### Session handling
+- Operator name/business name are embedded in JWT at login. If the business renames, the JWT carries stale data until it expires (24h). Consider re-fetching business name in `/api/operator/session` (one extra DB read per session check) vs. accepting occasional stale names.
+- Client session route (`/api/auth/session`) currently has a legacy fallback path. Once all pre-002 migration clients have a `user_id`, this fallback should be removed and tested.
+
+### Validation
+- `zod` is listed as a dependency but used only in the owner operators route. Adopt Zod for all API route input validation (especially `add-card`, `visits`).
+- Phone numbers are stored as raw strings with no normalization. `+40749397079` and `0749397079` are different records. A normalization step at registration and login would prevent duplicate/orphaned accounts.
+
+### Security
+- Add `helmet`-equivalent security headers to Next.js responses (CSP, X-Frame-Options, etc.)
+- Rotate `OPERATOR_JWT_SECRET` and `CLIENT_JWT_SECRET` periodically; document the rollover process (all sessions invalidated on change)
+- Consider short-lived operator tokens (4h instead of 24h) combined with silent refresh
+
+### Scalability
+- The `visits_log` table has no `business_id` column and no composite index on `(client_id, created_at)`. As visit volume grows, activity queries that join through `clients` will degrade. Add direct `business_id` column + index to `visits_log`.
+- `clients` table is scanned per business on every dashboard load. Add `idx_clients_business_id` if not present.
+- Supabase anon key reads in operator UI pages bypass the Next.js serverless layer — this is fast but loses auditability. Evaluate at scale.

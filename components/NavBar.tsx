@@ -53,6 +53,7 @@ const PeopleIcon = () => (
 );
 
 const clientNavItems: NavItem[] = [
+  { href: '/dashboard', label: 'Home', icon: <HomeIcon /> },
   { href: '/cards', label: 'Carduri', icon: <CardsIcon /> },
   { href: '/show-qr', label: 'My QR', icon: <QrIcon /> },
 ];
@@ -73,7 +74,7 @@ export default function NavBar({ role }: NavBarProps) {
       <div className="glass-card border-t border-[var(--border)] border-l-0 border-r-0 border-b-0">
         <div className="flex items-center justify-around px-2 py-3">
           {items.map((item) => {
-            const active = pathname === item.href || (item.href === '/cards' && pathname.startsWith('/dashboard'));
+            const active = pathname === item.href;
             return (
               <Link
                 key={item.href}

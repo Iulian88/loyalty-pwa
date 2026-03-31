@@ -21,6 +21,7 @@ export interface Client {
   reward_claimed: boolean;
   claimed_at: string | null;
   created_at: string;
+  pin_hash?: string;
 }
 
 export interface Business {
@@ -38,6 +39,7 @@ export interface Operator {
   phone: string;
   name: string;
   created_at: string;
+  pin_hash?: string;
 }
 
 export interface VisitLog {

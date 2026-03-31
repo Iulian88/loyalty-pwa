@@ -52,6 +52,7 @@ function DashboardContent() {
         const picked = (cardId ? allCards.find(c => c.id === cardId) : null) ?? allCards[0];
         setActiveCard(picked);
         prevVisitsRef.current = picked.visits;
+        localStorage.setItem('activeCardId', picked.id);
 
         if (bizData?.businesses) {
           const biz = bizData.businesses.find((b: { id: string; name: string; visit_goal: number; reward_description: string | null }) => b.id === picked.business_id);
@@ -147,10 +148,10 @@ function DashboardContent() {
           onClick={handleLogout}
           className="w-10 h-10 glass-card rounded-xl flex items-center justify-center text-[var(--muted)] hover:text-[var(--text)] transition-colors"
         >
-          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
-            <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-          </svg>
-        </button>
+            <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
+              <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.58L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
+            </svg>
+          </button>
       </header>
 
       {/* Content */}
@@ -185,7 +186,7 @@ function DashboardContent() {
         {/* Quick actions */}
         <div className="grid grid-cols-2 gap-3 fade-up delay-300">
           <Link
-            href="/show-qr"
+            href={`/show-qr?cardId=${activeCard.id}`}
             className="glass-card rounded-2xl p-4 flex flex-col items-center gap-2 hover:border-[var(--gold-dim)]/40 transition-colors active:scale-95 border border-[var(--border)]"
           >
             <div className="w-10 h-10 rounded-xl bg-[var(--gold-dim)]/10 flex items-center justify-center">

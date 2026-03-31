@@ -69,7 +69,7 @@ const createSchema = z.object({
   businessId: z.string().uuid(),
   phone: z.string().min(7).max(20),
   name: z.string().min(1).max(100),
-  pin: z.string().min(4).max(8).regex(/^\d+$/, 'PIN must be digits only'),
+  pin: z.string().length(4, 'PIN must be exactly 4 digits').regex(/^\d+$/, 'PIN must contain only numbers'),
 });
 
 export async function POST(request: NextRequest) {

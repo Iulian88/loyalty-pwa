@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, Suspense } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
-function LoginContent() {
+export default function AdminLoginPage() {
   const router = useRouter();
   const [phone, setPhone] = useState('');
   const [pin, setPin] = useState('');
@@ -17,7 +17,6 @@ function LoginContent() {
       setError('Te rugăm introduci numărul de telefon.');
       return;
     }
-
     setLoading(true);
     setError('');
 
@@ -35,9 +34,13 @@ function LoginContent() {
         throw new Error(error);
       }
       const data = await res.json();
-      router.push('/dashboard');
+      if (!data.isOwner) {
+        setError('Acest cont nu are un business asociat. Creează mai întâi un business.');
+        return;
+      }
+      router.push('/admin/owner');
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Login failed.');
+      setError(e instanceof Error ? e.message : 'Autentificare eșuată.');
     } finally {
       setLoading(false);
     }
@@ -45,10 +48,11 @@ function LoginContent() {
 
   return (
     <main className="min-h-screen flex flex-col p-6 relative overflow-hidden">
-      <div className="absolute bottom-0 left-0 w-72 h-72 rounded-full bg-[var(--gold-dim)]/4 blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-96 h-96 rounded-full bg-[var(--gold-dim)]/5 blur-3xl pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 rounded-full bg-[var(--gold-dim)]/3 blur-3xl pointer-events-none" />
 
       <Link
-        href="/"
+        href="/business-login"
         className="flex items-center gap-2 text-[var(--muted)] hover:text-[var(--text)] transition-colors mb-10 w-fit"
       >
         <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor">
@@ -58,9 +62,15 @@ function LoginContent() {
       </Link>
 
       <div className="flex-1 flex flex-col justify-center max-w-xs mx-auto w-full">
-        <div className="mb-8 fade-up">
-          <h1 className="font-display text-3xl font-bold text-[var(--text)]">Bine ai revenit</h1>
-          <p className="text-[var(--muted)] text-sm mt-1">Conectează-te cu numărul de telefon</p>
+        {/* Icon */}
+        <div className="mb-8 fade-up flex flex-col items-start">
+          <div className="w-16 h-16 rounded-2xl bg-[var(--gold-dim)]/15 flex items-center justify-center mb-5">
+            <svg viewBox="0 0 24 24" className="w-8 h-8 text-[var(--gold)]" fill="currentColor">
+              <path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/>
+            </svg>
+          </div>
+          <h1 className="font-display text-3xl font-bold text-[var(--text)]">Acces Administrator</h1>
+          <p className="text-[var(--muted)] text-sm mt-1">Gestionează business-ul tău</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-5 fade-up delay-100">
@@ -109,21 +119,15 @@ function LoginContent() {
           </button>
         </form>
 
-        <p className="mt-8 pt-6 border-t border-[var(--border)] text-[var(--muted)] text-center text-sm fade-up delay-200">
-          Eşti nou?{' '}
-          <Link href="/register" className="text-[var(--gold-dim)] hover:text-[var(--gold)] transition-colors">
-            Creează cont
-          </Link>
-        </p>
+        <div className="mt-8 pt-6 border-t border-[var(--border)] fade-up delay-200">
+          <p className="text-[var(--muted)] text-sm text-center">
+            Nu ai business?{' '}
+            <Link href="/admin/register" className="text-[var(--gold-dim)] hover:text-[var(--gold)] transition-colors">
+              Creează unul
+            </Link>
+          </p>
+        </div>
       </div>
     </main>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense>
-      <LoginContent />
-    </Suspense>
   );
 }

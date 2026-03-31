@@ -109,7 +109,7 @@ export default function CardsPage() {
             return (
               <button
                 key={card.id}
-                onClick={() => router.push(`/dashboard?cardId=${card.id}`)}
+                onClick={() => { localStorage.setItem('activeCardId', card.id); router.push(`/dashboard?cardId=${card.id}`); }}
                 className={`fade-up w-full glass-card rounded-2xl p-4 flex items-center gap-4 border transition-colors active:scale-95 text-left ${
                   isComplete ? 'border-[var(--gold-dim)]/40 reward-glow' : 'border-[var(--border)]'
                 }`}
@@ -162,7 +162,7 @@ export default function CardsPage() {
               <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/>
             </svg>
             <span className="text-sm font-medium">
-              {availableBusinesses.length === 0 ? 'Ai toate cardurile disponibile' : 'Adaugă card'}
+              {availableBusinesses.length === 0 ? 'Descoperă alte business-uri' : 'Adaugă card'}
             </span>
           </button>
         ) : (

@@ -6,7 +6,6 @@ import type { User } from '@/types';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('[REGISTER] input:', { name: body?.name, phone: body?.phone });
     const { name, phone } = body;
 
     if (!name?.trim() || !phone?.trim()) {
@@ -26,7 +25,6 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (existing) {
-      console.log('[REGISTER] phone already registered:', phone.trim());
       return NextResponse.json({ error: 'Phone number already registered.' }, { status: 400 });
     }
 
@@ -42,7 +40,6 @@ export async function POST(request: NextRequest) {
     }
 
     const user = data as User;
-    console.log('[REGISTER] created user:', user.id);
     const token = setSession({ id: user.id, name: user.name, phone: user.phone });
     const response = NextResponse.json({ success: true });
     response.cookies.set('token', token, {

@@ -93,8 +93,8 @@ function OperatorsContent() {
     setCreating(true);
     setCreateError('');
 
-    if (!formPhone.trim() || !formName.trim() || formPin.length < 4) {
-      setCreateError('Completează toate câmpurile. PIN-ul trebuie să aibă minim 4 cifre.');
+    if (!formPhone.trim() || !formName.trim() || formPin.length !== 4) {
+      setCreateError('Completează toate câmpurile. PIN-ul trebuie să aibă exact 4 cifre.');
       setCreating(false);
       return;
     }
@@ -218,15 +218,15 @@ function OperatorsContent() {
                 />
               </div>
               <div>
-                <label className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">PIN (minim 4 cifre)</label>
+                <label className="block text-xs uppercase tracking-widest text-[var(--muted)] mb-2">PIN (exact 4 cifre)</label>
                 <input
                   type="password"
                   inputMode="numeric"
                   value={formPin}
-                  onChange={e => setFormPin(e.target.value.replace(/\D/g, '').slice(0, 8))}
+                  onChange={e => setFormPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
                   placeholder="••••"
                   className="input-field w-full px-4 py-3 rounded-xl text-base tracking-widest"
-                  maxLength={8}
+                  maxLength={4}
                 />
               </div>
 

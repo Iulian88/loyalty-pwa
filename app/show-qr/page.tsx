@@ -1,12 +1,14 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, useRef, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Client } from '@/lib/supabase';
 import NavBar from '@/components/NavBar';
 
-export default function ShowQRPage() {
+function ShowQRContent() {
   const router = useRouter();
+  const params = useSearchParams();
+  const cardId = params.get('cardId');
   const [client, setClient] = useState<Client | null>(null);
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -35,7 +37,14 @@ export default function ShowQRPage() {
           .then(cardsData => {
             if (!mounted || !cardsData?.cards) return;
             setCards(cardsData.cards);
-            if (cardsData.cards.length > 0) setActiveCard(cardsData.cards[0]);
+            if (cardsData.cards.length > 0) {
+              const storedId = localStorage.getItem('activeCardId');
+              const selectedCard =
+                cardsData.cards.find((c: Client) => c.id === cardId) ||
+                cardsData.cards.find((c: Client) => c.id === storedId) ||
+                cardsData.cards[0];
+              setActiveCard(selectedCard);
+            }
           })
           .catch(() => {});
       })
@@ -171,5 +180,17 @@ export default function ShowQRPage() {
 
       <NavBar role="client" />
     </main>
+  );
+}
+
+export default function ShowQRPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-[var(--gold-dim)] border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <ShowQRContent />
+    </Suspense>
   );
 }

@@ -6,8 +6,6 @@ import { setSession } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    console.log('[LOGIN] input:', { phone: body?.phone, hasPin: !!body?.pin });
-
     const { phone, pin } = body;
 
     if (!phone?.trim()) {
@@ -33,9 +31,15 @@ export async function POST(request: NextRequest) {
     }
 
     if (userData) {
-      console.log('[LOGIN] found user:', userData.id);
+      const { data: ownerBiz } = await supabase
+        .from('businesses')
+        .select('id')
+        .eq('owner_id', userData.id)
+        .limit(1)
+        .single();
+      const isOwner = !!ownerBiz;
       const token = setSession({ id: userData.id, name: userData.name, phone: userData.phone });
-      const response = NextResponse.json({ success: true });
+      const response = NextResponse.json({ success: true, isOwner });
       response.cookies.set('token', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
@@ -56,11 +60,8 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (legacyError || !legacyClient) {
-      console.log('[LOGIN] no account found for phone:', phone.trim());
       return NextResponse.json({ error: 'No account found for this phone number.' }, { status: 404 });
     }
-
-    console.log('[LOGIN] legacy client fallback:', legacyClient.id);
 
     // Enforce PIN only if the legacy client has one stored
     if (legacyClient.pin_hash) {
@@ -74,8 +75,15 @@ export async function POST(request: NextRequest) {
     }
 
     const subjectId = legacyClient.user_id ?? legacyClient.id;
+    const { data: ownerBiz } = await supabase
+      .from('businesses')
+      .select('id')
+      .eq('owner_id', subjectId)
+      .limit(1)
+      .single();
+    const isOwner = !!ownerBiz;
     const token = setSession({ id: subjectId, name: legacyClient.name, phone: legacyClient.phone });
-    const response = NextResponse.json({ success: true });
+    const response = NextResponse.json({ success: true, isOwner });
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

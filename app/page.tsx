@@ -52,13 +52,13 @@ export default function HomePage() {
         {/* Operator link */}
         <div className="mt-8 pt-6 border-t border-[var(--border)]">
           <Link
-            href="/operator/login"
+            href="/business-login"
             className="text-sm text-[var(--muted)] hover:text-[var(--text-dim)] transition-colors flex items-center justify-center gap-2"
           >
             <svg viewBox="0 0 24 24" className="w-4 h-4" fill="currentColor">
               <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
             </svg>
-            Acces operator
+            Acces business
           </Link>
         </div>
       </div>
