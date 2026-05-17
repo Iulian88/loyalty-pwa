@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { verifyOperatorToken } from '@/lib/auth';
-import { VISIT_GOAL, getBusinessById } from '@/lib/supabase';
+import { VISIT_GOAL } from '@/lib/supabase';
+import { getBusinessById } from '@/lib/supabase-admin';
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get('operator_session')?.value;

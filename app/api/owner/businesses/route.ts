@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession } from '@/lib/auth';
-import { getBusinessesByOwnerId } from '@/lib/supabase';
+import { getBusinessesByOwnerId } from '@/lib/supabase-admin';
 
 export async function GET(request: NextRequest) {
   const token = request.cookies.get('token')?.value;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getSession, getClientById } from '@/lib/auth';
-import { VISIT_GOAL, getBusinessById, getUserById, getFirstCardByUserId } from '@/lib/supabase';
+import { VISIT_GOAL } from '@/lib/supabase';
+import { getBusinessById, getUserById, getFirstCardByUserId } from '@/lib/supabase-admin';
 
 export async function GET(request: NextRequest) {
   try {
@@ -21,6 +22,7 @@ export async function GET(request: NextRequest) {
     // New path: query by user_id.
     // Legacy path: query by session.userId as a direct client id (pre-migration tokens).
     let client = null;
+
     if (user) {
       client = await getFirstCardByUserId(user.id);
     } else {

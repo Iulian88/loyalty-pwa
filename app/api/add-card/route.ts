@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import { getSession } from '@/lib/auth';
-import { getUserById } from '@/lib/supabase';
+import { getUserById } from '@/lib/supabase-admin';
 
 export async function POST(request: NextRequest) {
   try {
